@@ -2,7 +2,13 @@
  * api.js — Frontend API client for RailSaathi backend.
  */
 
-const API_BASE = '/api';
+// Backend address.
+//  - Local development: leave VITE_API_URL unset. Requests go to '/api' and the Vite dev server
+//    proxies them to the backend (see vite.config.js).
+//  - Deployed (e.g. Vercel + Render): set VITE_API_URL to the backend origin,
+//    for example https://your-service.onrender.com (no trailing slash needed).
+const API_ORIGIN = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+const API_BASE = `${API_ORIGIN}/api`;
 
 export async function checkHealth() {
   const res = await fetch(`${API_BASE}/health`);
