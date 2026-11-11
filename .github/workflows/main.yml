@@ -37,7 +37,7 @@ jobs:
       - name: Build frontend for GitHub Pages
         working-directory: frontend
         env:
-          VITE_API_URL: https://railsaathi-api-3uvh.onrender.com
+          VITE_API_URL: https://railsaathi-api.vercel.app
         run: npm run build -- --base=/
 
       - name: Upload Pages artifact
