@@ -38,7 +38,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: https://railsaathi-api-3uvh.onrender.com
-        run: npm run build -- --base=/railsaathi/
+        run: npm run build -- --base=/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
