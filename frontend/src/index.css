@@ -133,3 +133,6 @@ main table thead th {font-size:12px;letter-spacing:1px;font-weight:800;color:var
 main table tbody tr {transition:background .16s ease;}
 main table tbody tr:hover {background:var(--panel-soft);}
 main .leaflet-control-attribution {font-size:11px;}
+
+/* Six navigation tabs: hide the decorative status badge before the header gets crowded. */
+@media (max-width: 1440px) { .network-status { display: none; } }

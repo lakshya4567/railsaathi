@@ -74,7 +74,7 @@ def _as_int(value: Any, field: str, default: int, lo: int, hi: int) -> int:
 
 def _train_number(value: Any) -> str:
     s = _as_str(value, "train_number", 12)
-    if not re.fullmatch(r"\d{3,6}", s):
+    if not re.fullmatch(r"[0-9]{3,6}", s):
         raise ToolInputError("A train number is 3–6 digits (for example 12810).")
     return s
 
@@ -275,7 +275,7 @@ def search_trains(db, query: str, limit: int | None = None) -> dict:
     limit = _as_int(limit, "limit", 8, 1, MAX_RESULTS)
     col = db["trains"]
 
-    if re.fullmatch(r"\d{1,6}", q):
+    if re.fullmatch(r"[0-9]{1,6}", q):
         exact = col.find_one({"trainNumber": q}, TRAIN_SUMMARY_PROJ)
         if exact:
             return {"found": True, "total": 1, "trains": [_summary(exact)], "matchedBy": "exact train number"}
@@ -471,8 +471,11 @@ def get_trains_at_station(db, station: str, after_time: str | None = None,
 @_guard
 def find_trains_between_stations(db, from_station: str, to_station: str,
                                  day: str | None = None, sort_by: str | None = None,
-                                 limit: int | None = None) -> dict:
-    """Direct trains that stop at both stations, in that order of travel."""
+                                 limit: int | None = None, depart_after: str | None = None,
+                                 depart_before: str | None = None, arrive_by: str | None = None) -> dict:
+    """Direct trains that stop at both stations, in that order of travel.
+    Optional time filters (HH:MM): depart_after / depart_before apply to the departure from the
+    origin; arrive_by keeps trains that arrive on the SAME day as they leave, by that time."""
     a_q = _as_str(from_station, "from_station", 80)
     b_q = _as_str(to_station, "to_station", 80)
     limit = _as_int(limit, "limit", 10, 1, MAX_RESULTS)
@@ -483,6 +486,15 @@ def find_trains_between_stations(db, from_station: str, to_station: str,
         day = _as_str(day, "day", 3).upper()
         if day not in DAYS:
             raise ToolInputError("day must be one of MON, TUE, WED, THU, FRI, SAT, SUN.")
+
+    def _tod(value, name):
+        if value is None:
+            return None
+        m = _to_minutes(_as_str(value, name, 8))
+        if m is None:
+            raise ToolInputError(f"{name} must look like 18:30.")
+        return m
+    t_after, t_before, t_arrive = _tod(depart_after, "depart_after"), _tod(depart_before, "depart_before"), _tod(arrive_by, "arrive_by")
 
     a, a_others = resolve_station(db, a_q)
     b, b_others = resolve_station(db, b_q)
@@ -517,6 +529,14 @@ def find_trains_between_stations(db, from_station: str, to_station: str,
         arr_abs = _abs_minutes(sb, "arrivalTime")
         if arr_abs is None:
             arr_abs = _abs_minutes(sb, "departureTime")
+        dep_tod = None if dep_abs is None else dep_abs % 1440
+        arr_tod = None if arr_abs is None else arr_abs % 1440
+        if t_after is not None and (dep_tod is None or dep_tod < t_after):
+            continue
+        if t_before is not None and (dep_tod is None or dep_tod > t_before):
+            continue
+        if t_arrive is not None and (arr_tod is None or arr_tod > t_arrive or _day(sb) != _day(sa)):
+            continue
         duration = None
         if dep_abs is not None and arr_abs is not None and arr_abs >= dep_abs:
             duration = round(arr_abs - dep_abs)
@@ -545,7 +565,8 @@ def find_trains_between_stations(db, from_station: str, to_station: str,
                 "message": (f"No direct train in the database runs from {a['name']} ({a['code']}) "
                             f"to {b['name']} ({b['code']})."
                             + (f" (Filtered to trains starting a run so they depart on {day}.)" if day else "")
-                            + " Connecting journeys are not searched.")}
+                            + (" (Time filters applied.)" if (t_after, t_before, t_arrive) != (None, None, None) else "")
+                            + " Try find_journeys_with_transfer for a journey with one change.")}
 
     timed = [r for r in rows if r[1] is not None]
     fastest = min(timed, key=lambda r: r[1])[2] if timed else None
@@ -562,6 +583,7 @@ def find_trains_between_stations(db, from_station: str, to_station: str,
         "returned": min(limit, len(rows)),
         "sortedBy": sort_by,
         "dayFilter": day,
+        "timeFilters": {"departAfter": depart_after, "departBefore": depart_before, "arriveBy": arrive_by},
         "shortestScheduled": {
             "trainNumber": fastest["trainNumber"], "trainName": fastest["trainName"],
             "scheduledDuration": fastest["journey"]["scheduledDuration"],
@@ -769,6 +791,9 @@ TOOL_SPECS: dict[str, dict] = {
                 "day": {"type": "string", "description": "Optional weekday of departure from the origin: MON..SUN."},
                 "sort_by": {"type": "string", "description": "'departure' (default) or 'duration'."},
                 "limit": {"type": "integer"},
+                "depart_after": {"type": "string", "description": "Only trains leaving the origin at/after this time, HH:MM 24-hour."},
+                "depart_before": {"type": "string", "description": "Only trains leaving the origin at/before this time, HH:MM."},
+                "arrive_by": {"type": "string", "description": "Only trains reaching the destination by this time, HH:MM, on the same day they leave."},
             },
             "required": ["from_station", "to_station"],
         },

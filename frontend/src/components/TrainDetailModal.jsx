@@ -85,6 +85,7 @@ export default function TrainDetailModal({ trainNumber, onClose, onViewMap }) {
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="w-10 h-10 rounded-xl bg-[var(--c-slate-surface)] hover:bg-[var(--c-slate-border)] text-[var(--c-text-muted)] hover:text-[var(--c-text-main)] flex items-center justify-center font-bold text-lg transition"
           >
             <CloseIcon />

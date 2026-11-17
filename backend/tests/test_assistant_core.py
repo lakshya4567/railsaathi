@@ -17,6 +17,7 @@ from pymongo.errors import ServerSelectionTimeoutError
 
 from app.services import assistant as A
 from app.services import railway_tools as rt
+from app.services import tools as tl
 from app.services.ai_provider import AIProviderError
 from tests.fake_db import FakeDB, BrokenDB
 from tests.fixtures_synthetic import TRAINS, STATIONS
@@ -54,7 +55,7 @@ def fixed_time_runner(name, args, db=None):
     """Real tool layer, but with a fixed clock for the position tool."""
     if name == "get_scheduled_position":
         return rt.get_scheduled_position(db, now=NOW, **args)
-    return rt.run_tool(name, args, db=db)
+    return tl.run_tool(name, args, db=db)
 
 
 class AssistantTests(unittest.TestCase):
@@ -223,7 +224,7 @@ class AssistantTests(unittest.TestCase):
         broken = BrokenDB(ServerSelectionTimeoutError("down"))
         p = FakeProvider([call("get_train_details", train_number="12810")])
         with self.assertRaises(rt.DatabaseUnavailable):
-            A.chat("tell me about 12810", None, None, provider=p, db=broken, now=NOW, run_tool=rt.run_tool)
+            A.chat("tell me about 12810", None, None, provider=p, db=broken, now=NOW, run_tool=tl.run_tool)
 
     # ---- input validation ----
     def test_invalid_user_input(self):

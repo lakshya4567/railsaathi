@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { searchGlobal } from '../services/api'
 import { SparkIcon, SearchIcon, EnterIcon, TrainIcon, StationIcon, MapIcon, WaveIcon, CrosshairIcon, ZigzagIcon, ArrowUpRightIcon } from './Icons'
 
-export default function Home({ setActiveTab, onSelectTrain, onSelectStation }) {
+export default function Home({ setActiveTab, onSelectTrain, onSelectStation, onAskAI }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -41,7 +41,7 @@ export default function Home({ setActiveTab, onSelectTrain, onSelectStation }) {
             <label className="search-input-wrap"><span className="search-symbol"><SearchIcon /></span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Train name, train number or station code" aria-label="Search trains and stations"/><kbd><EnterIcon /></kbd></label>
             <button type="submit" disabled={loading || !query.trim()}>{loading ? 'Searching…' : 'Search'} <span>→</span></button>
           </form>
-          <div className="search-hints"><span>TRY SEARCHING</span><button type="button" onClick={() => setQuery('12951')}>12951</button><button type="button" onClick={() => setQuery('New Delhi')}>New Delhi</button><button type="button" onClick={() => setQuery('Mumbai')}>Mumbai</button></div>
+          <div className="search-hints"><span>TRY SEARCHING</span><button type="button" onClick={() => setQuery('12951')}>12951</button><button type="button" onClick={() => setQuery('New Delhi')}>New Delhi</button><button type="button" onClick={() => setQuery('Mumbai')}>Mumbai</button>{onAskAI && query.trim().length > 2 && <button type="button" onClick={() => onAskAI(query.trim())}>Ask AI about this</button>}</div>
           {error && <p className="search-error">{error}</p>}
         </div>
       </section>

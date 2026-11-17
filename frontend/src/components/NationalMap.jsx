@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { searchTrains, getTrainMapData } from '../services/api'
 import L from 'leaflet'
@@ -16,8 +16,64 @@ let DefaultIcon = L.icon({
 })
 L.Marker.prototype.options.icon = DefaultIcon
 
+// Marker-only mode used by the journey assistant (reachable stations, a single station).
+// overlay = { markers: [{ code, name, lat, lng, color, lines: [text], origin }], legend: [{ color, label }], note }
+// No lines are drawn between markers: they are places, not a track.
+function OverlayMap({ overlay }) {
+  const pts = (overlay.markers || []).filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lng))
+  const bounds = pts.length > 1 ? pts.map((m) => [m.lat, m.lng]) : null
+  const view = bounds
+    ? { bounds, boundsOptions: { padding: [30, 30] } }
+    : { center: pts.length ? [pts[0].lat, pts[0].lng] : [20.5937, 78.9629], zoom: pts.length ? 9 : 5 }
+  const popup = (m) => (
+    <Popup>
+      <div className="space-y-1 text-xs">
+        <div className="font-bold text-amber-500 text-sm">{m.name} ({m.code})</div>
+        {(m.lines || []).map((l, i) => <div key={i} className="text-[var(--c-text-muted)]">{l}</div>)}
+      </div>
+    </Popup>
+  )
+  return (
+    <div className="space-y-3">
+      <div className="h-[380px] w-full rounded-2xl overflow-hidden border border-[var(--c-slate-border)] relative z-0 shadow-2xl">
+        <MapContainer {...view} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {pts.map((m) =>
+            m.origin ? (
+              <Marker key={`o-${m.code}`} position={[m.lat, m.lng]}>{popup(m)}</Marker>
+            ) : (
+              <CircleMarker
+                key={m.code}
+                center={[m.lat, m.lng]}
+                radius={8}
+                pathOptions={{ color: '#0f172a', weight: 1.5, fillColor: m.color || '#f59e0b', fillOpacity: 0.9 }}
+              >
+                {popup(m)}
+              </CircleMarker>
+            )
+          )}
+        </MapContainer>
+      </div>
+      {overlay.legend?.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 px-1 text-xs text-[var(--c-text-muted)]">
+          {overlay.legend.map((l) => (
+            <span key={l.label} className="inline-flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: l.color }} />{l.label}
+            </span>
+          ))}
+        </div>
+      )}
+      {overlay.note && <p className="text-xs text-[var(--c-text-muted)] px-1">{overlay.note}</p>}
+    </div>
+  )
+}
+
 // `embedded` (optional) renders just the map + route summary, for use inside the journey assistant.
-export default function NationalMap({ initialTrainNumber, embedded = false }) {
+// `overlay` (optional) renders markers only (see OverlayMap) instead of loading a train route.
+export default function NationalMap({ initialTrainNumber, embedded = false, overlay = null }) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [selectedTrain, setSelectedTrain] = useState(null)
@@ -70,6 +126,8 @@ export default function NationalMap({ initialTrainNumber, embedded = false }) {
   const center = stopsWithCoords.length > 0
     ? [stopsWithCoords[0].coordinates.latitude, stopsWithCoords[0].coordinates.longitude]
     : defaultCenter
+
+  if (overlay) return <OverlayMap overlay={overlay} />
 
   return (
     <div className={`space-y-6 ${embedded ? '' : 'pb-16'} animate-fade-in`}>

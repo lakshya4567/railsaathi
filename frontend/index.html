@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1e3934" />
     <meta name="description" content="Explore Indian railway trains, stations and routes with RailSaathi." />
+    <script>
+      // Apply the saved (or default dark) theme before the page paints, to avoid a light flash.
+      try {
+        var t = localStorage.getItem('railsaathi_theme');
+        document.documentElement.setAttribute('data-theme', t === 'light' || t === 'dark' ? t : 'dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    </script>
     <title>RailSaathi — Your journey, connected.</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS -->
