@@ -25,3 +25,32 @@
 
 ## Not touched
 Database contents/collections/indexes, journey_estimator.py, existing routes, Home/Trains/Stations/modals/Navbar/CSS.
+
+
+## Version 2: feature release
+
+### New backend files
+- app/services/journey_tools.py: one-change journeys, reachability, trip planner, comparison, halts
+- app/services/demo_tools.py: DEMO PNR finder, fares, seats, running status, food menu and orders
+- app/services/tools.py: single tool registry the AI can call (merges real and demo tools)
+- app/services/ticket_reader.py: ticket photo reading (image kept in memory only)
+- app/services/data_quality.py and scripts/data_quality_report.py: read-only data checks
+- app/services/eval_runner.py and scripts/run_assistant_eval.py: question suite for the real model
+- app/routes/demo.py: /api/demo/* endpoints
+- backend/gemini_test.py: checks your key and model
+- tests: test_journey_tools, test_demo_tools, test_assistant_features, test_ticket_reader, test_data_quality, test_eval_runner, test_assistant_api
+
+### Changed backend files
+- app/services/assistant.py: new blocks, follow-up chips, progress events, cache, language, preferences, DEMO rules
+- app/services/railway_tools.py: time filters; ASCII-only digit validation
+- app/services/ai_provider.py: JSON response option; default model gemini-3.5-flash-lite
+- app/routes/assistant.py: /stream and /ticket endpoints, daily limit
+- app/config.py, .env.example, app/main.py, app/routes/__init__.py
+
+### New frontend files
+- components/Services.jsx, components/Icons.jsx (SVG icons)
+- utils/: i18n.js, ics.js, share.js, journey.js, prefs.js, orders.js, image.js
+- frontend/.env.example (optional VITE_API_URL)
+
+### Changed frontend files
+- components/AssistantBlocks.jsx, JourneyAssistant.jsx, NationalMap.jsx (marker overlay mode), Navbar.jsx, Home.jsx ("Ask AI"), App.jsx, services/api.js, index.css, index.html

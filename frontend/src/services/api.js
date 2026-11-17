@@ -95,30 +95,144 @@ export async function getAssistantStatus() {
   return res.json();
 }
 
-export async function sendAssistantMessage(message, history, context) {
-  let res;
+async function readError(res) {
+  let data = null
+  try { data = await res.json() } catch { /* non-JSON error body */ }
+  const d = data && data.detail
+  const err = new Error(
+    d && typeof d === 'object' && d.message
+      ? d.message
+      : typeof d === 'string'
+        ? d
+        : res.status === 422
+          ? 'That could not be processed. Please check it and try again.'
+          : 'The service is unavailable right now. Please try again.'
+  )
+  err.code = d && typeof d === 'object' ? d.code : undefined
+  err.status = res.status
+  return err
+}
+
+const NETWORK_MSG = 'Could not reach the server. Check that the backend is running.'
+
+function chatBody(message, history, context, extras = {}) {
+  return JSON.stringify({
+    message, history, context,
+    language: extras.language === 'hi' ? 'hi' : 'en',
+    preferences: extras.preferences || null,
+  })
+}
+
+export async function sendAssistantMessage(message, history, context, extras = {}) {
+  let res
   try {
     res = await fetch(`${API_BASE}/assistant/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, history, context }),
-    });
-  } catch {
-    throw new Error('Could not reach the server. Check that the backend is running.');
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: chatBody(message, history, context, extras),
+    })
+  } catch { throw new Error(NETWORK_MSG) }
+  if (!res.ok) throw await readError(res)
+  return res.json()
+}
+
+// Split a buffer of server-sent events into complete events; returns the unfinished rest.
+export function parseSseChunk(buffer) {
+  const events = []
+  const parts = buffer.split('\n\n')
+  const rest = parts.pop()
+  for (const block of parts) {
+    let name = 'message'
+    const data = []
+    for (const line of block.split('\n')) {
+      if (line.startsWith(':')) continue // keep-alive comment
+      if (line.startsWith('event:')) name = line.slice(6).trim()
+      else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
+    }
+    if (data.length) {
+      try { events.push({ name, data: JSON.parse(data.join('\n')) }) } catch { /* ignore a malformed event */ }
+    }
   }
-  let data = null;
-  try { data = await res.json(); } catch { /* non-JSON error body */ }
+  return { events, rest }
+}
+
+/**
+ * Ask with live progress. `onStatus(text)` is called for each step ("Looking up train ...").
+ * Falls back to the normal request if streaming is unavailable.
+ */
+export async function streamAssistantMessage(message, history, context, extras = {}, onStatus = () => {}) {
+  let res
+  try {
+    res = await fetch(`${API_BASE}/assistant/stream`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: chatBody(message, history, context, extras),
+    })
+  } catch { throw new Error(NETWORK_MSG) }
   if (!res.ok) {
-    const d = data && data.detail;
-    const err = new Error(
-      d && typeof d === 'object' && d.message
-        ? d.message
-        : res.status === 422
-          ? 'That message could not be processed. Please rephrase it.'
-          : 'The assistant is unavailable right now. Please try again.'
-    );
-    err.code = d && typeof d === 'object' ? d.code : undefined;
-    throw err;
+    if (res.status === 404 || res.status === 405) return sendAssistantMessage(message, history, context, extras)
+    throw await readError(res)
   }
-  return data;
+  if (!res.body || !res.body.getReader) return sendAssistantMessage(message, history, context, extras)
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let result = null
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const parsed = parseSseChunk(buffer)
+      buffer = parsed.rest
+      for (const ev of parsed.events) {
+        if (ev.name === 'status') onStatus(ev.data.text)
+        else if (ev.name === 'result') result = ev.data
+        else if (ev.name === 'error') {
+          const err = new Error(ev.data.message || 'The assistant could not answer.')
+          err.code = ev.data.code
+          throw err
+        }
+      }
+    }
+  } catch (err) {
+    if (err.code) throw err
+    throw new Error('The connection was interrupted. Please try again.')
+  }
+  if (!result) throw new Error('The assistant did not return an answer. Please try again.')
+  return result
+}
+
+export async function readTicket(imageBase64, mimeType) {
+  let res
+  try {
+    res = await fetch(`${API_BASE}/assistant/ticket`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: imageBase64, mime_type: mimeType }),
+    })
+  } catch { throw new Error(NETWORK_MSG) }
+  if (!res.ok) throw await readError(res)
+  return (await res.json()).ticket
+}
+
+// ── DEMO services (simulated; see backend services/demo_tools.py) ────────────
+async function demoGet(path) {
+  let res
+  try { res = await fetch(`${API_BASE}/demo${path}`) } catch { throw new Error(NETWORK_MSG) }
+  if (!res.ok) throw await readError(res)
+  return res.json()
+}
+const qs = (o) => new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString()
+
+export const demoPnr = (pnr) => demoGet(`/pnr/${encodeURIComponent(pnr)}`)
+export const demoFoodMenu = (station) => demoGet(`/food/menu?${qs({ station })}`)
+export const demoFare = (train, from_station, to_station, travel_class) => demoGet(`/fare?${qs({ train, from_station, to_station, travel_class })}`)
+export const demoSeats = (train, date, travel_class) => demoGet(`/seats?${qs({ train, date, travel_class })}`)
+export const demoLive = (train) => demoGet(`/live/${encodeURIComponent(train)}`)
+export async function demoFoodOrder(train_number, station, items) {
+  let res
+  try {
+    res = await fetch(`${API_BASE}/demo/food/order`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ train_number, station, items }),
+    })
+  } catch { throw new Error(NETWORK_MSG) }
+  if (!res.ok) throw await readError(res)
+  return res.json()
 }

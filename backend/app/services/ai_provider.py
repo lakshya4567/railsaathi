@@ -73,7 +73,8 @@ class GeminiProvider:
         self._base_url = base_url.rstrip("/")
 
     def generate(self, system: str, contents: list[dict], tool_declarations: list[dict],
-                 temperature: float = 0.2, max_output_tokens: int = 1024) -> dict:
+                 temperature: float = 0.2, max_output_tokens: int = 1024,
+                 response_mime_type: str | None = None) -> dict:
         """One model call. Returns {"content": {...model content with parts...}, "finish_reason": str|None}.
 
         `contents` follows Gemini's format. When the model asked for tools, the
@@ -85,6 +86,8 @@ class GeminiProvider:
             "contents": contents,
             "generationConfig": {"temperature": temperature, "maxOutputTokens": max_output_tokens},
         }
+        if response_mime_type:
+            body["generationConfig"]["responseMimeType"] = response_mime_type
         if tool_declarations:
             body["tools"] = [{"functionDeclarations": tool_declarations}]
             body["toolConfig"] = {"functionCallingConfig": {"mode": "AUTO"}}
@@ -159,7 +162,7 @@ def build_provider(settings, transport: Transport | None = None):
             "(see .env.example) and restart the backend.", 503)
     return GeminiProvider(
         api_key=key.strip(),
-        model=(getattr(settings, "gemini_model", "") or "gemini-2.5-flash").strip(),
+        model=(getattr(settings, "gemini_model", "") or "gemini-3.5-flash-lite").strip(),
         timeout=float(getattr(settings, "ai_timeout_seconds", 30.0)),
         transport=transport,
     )

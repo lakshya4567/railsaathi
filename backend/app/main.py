@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .database import ping, ensure_indexes, close_connection
-from .routes import trains_router, stations_router, search_router, assistant_router
+from .routes import trains_router, stations_router, search_router, assistant_router, demo_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -51,6 +51,7 @@ app.include_router(trains_router)
 app.include_router(stations_router)
 app.include_router(search_router)
 app.include_router(assistant_router)
+app.include_router(demo_router)
 
 
 # ── Health ─────────────────────────────────────────────────────────────────

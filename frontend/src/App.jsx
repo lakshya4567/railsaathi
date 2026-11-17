@@ -5,23 +5,42 @@ import Trains from './components/Trains'
 import Stations from './components/Stations'
 import NationalMap from './components/NationalMap'
 import JourneyAssistant from './components/JourneyAssistant'
+import Services from './components/Services'
 import TrainDetailModal from './components/TrainDetailModal'
 import StationDetailModal from './components/StationDetailModal'
 import { TrainIcon } from './components/Icons'
+import { getInitialLang, saveLang } from './utils/i18n'
+
+// Dark is the default appearance. A passenger's saved choice (via the theme button) still wins.
+const DEFAULT_THEME = 'dark'
+function getInitialTheme() {
+  try {
+    const saved = localStorage.getItem('railsaathi_theme')
+    return saved === 'light' || saved === 'dark' ? saved : DEFAULT_THEME
+  } catch {
+    return DEFAULT_THEME // storage blocked (private mode, etc.)
+  }
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home')
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState(getInitialTheme)
   const [selectedTrainNumber, setSelectedTrainNumber] = useState(null)
   const [selectedStationCode, setSelectedStationCode] = useState(null)
   const [mapInitialTrain, setMapInitialTrain] = useState(null)
+  const [lang, setLangState] = useState(getInitialLang)
+  const [assistantQuestion, setAssistantQuestion] = useState(null)
+  const [servicesInitial, setServicesInitial] = useState(null)
 
   useEffect(() => {
-    // Restore the passenger's preferred appearance; use light mode on first visit.
-    const savedTheme = localStorage.getItem('railsaathi_theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.setAttribute('data-theme', savedTheme)
-  }, [])
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  const setLang = (l) => { setLangState(l); saveLang(l); document.documentElement.setAttribute('lang', l) }
+
+  // Send a typed question (e.g. from the Home search) to the Journey AI tab.
+  const handleAskAI = (text) => { setAssistantQuestion(text); setActiveTab('assistant') }
+  const handleOpenServices = (tab, params) => { setServicesInitial({ tab, ...(params || {}) }); setActiveTab('services') }
 
   const handleViewMap = (trainNumber) => {
     setMapInitialTrain(trainNumber)
@@ -35,6 +54,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         theme={theme}
         setTheme={setTheme}
+        lang={lang}
+        setLang={setLang}
       />
 
       <main className="app-main flex-1 w-full mx-auto">
@@ -43,6 +64,7 @@ export default function App() {
             setActiveTab={setActiveTab}
             onSelectTrain={(num) => setSelectedTrainNumber(num)}
             onSelectStation={(code) => setSelectedStationCode(code)}
+            onAskAI={handleAskAI}
           />
         )}
         {activeTab === 'trains' && (
@@ -56,10 +78,17 @@ export default function App() {
         )}
         {activeTab === 'assistant' && (
           <JourneyAssistant
+            lang={lang}
+            initialQuestion={assistantQuestion}
+            onInitialQuestionUsed={() => setAssistantQuestion(null)}
             onSelectTrain={(num) => setSelectedTrainNumber(num)}
             onSelectStation={(code) => setSelectedStationCode(code)}
             onViewMap={handleViewMap}
+            onOpenServices={handleOpenServices}
           />
+        )}
+        {activeTab === 'services' && (
+          <Services lang={lang} initial={servicesInitial} onAskAI={handleAskAI} />
         )}
       </main>
 

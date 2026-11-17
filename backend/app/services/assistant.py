@@ -25,6 +25,7 @@ from datetime import datetime
 from typing import Any, Callable
 
 from . import railway_tools as rt
+from . import tools as tl
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class AssistantInputError(ValueError):
 # ───────────────────────── input sanitising ─────────────────────────
 
 _CTRL = re.compile(r"[\x00-\x1f\x7f]+")
-_TRAIN_NO = re.compile(r"^\d{3,6}$")
+_TRAIN_NO = re.compile(r"^[0-9]{3,6}$")
 _CODE = re.compile(r"^[A-Za-z0-9\-]{1,10}$")
 _KINDS = {"journey", "trains", "station_trains", "stations"}
 
@@ -60,7 +61,7 @@ def _clean_train(raw: Any) -> dict | None:
     if not isinstance(raw, dict):
         return None
     num = raw.get("trainNumber")
-    if not isinstance(num, str) or not _TRAIN_NO.match(num):
+    if not isinstance(num, str) or not _TRAIN_NO.fullmatch(num):
         return None
     item = {"trainNumber": num, "trainName": _clean(raw.get("trainName"), 80)}
     for k in ("departure", "arrival", "duration"):
@@ -77,7 +78,7 @@ def _clean_station(raw: Any) -> dict | None:
     if not isinstance(raw, dict):
         return None
     code = raw.get("code")
-    if not isinstance(code, str) or not _CODE.match(code):
+    if not isinstance(code, str) or not _CODE.fullmatch(code):
         return None
     return {"code": code.upper(), "name": _clean(raw.get("name"), 80)}
 
@@ -151,12 +152,23 @@ CHOOSING TOOLS
 - A station -> get_station_details; trains stopping there -> get_station_trains; times at a station or "after 6pm" -> get_trains_at_station.
 - "Trains from A to B" -> find_trains_between_stations (use sort_by="duration" for shortest/fastest; pass day=MON..SUN only if the user names a weekday; use today's date below to work out "tomorrow").
 - "Where is it / next station" -> get_scheduled_position.
+- No direct train, or the user wants options with a change -> find_journeys_with_transfer (one change at one station; give day).
+- "Before 6 pm", "after dinner", "reach by noon" -> use depart_after / depart_before / arrive_by in find_trains_between_stations. Work out weekdays from today's date below.
+- "Where can I go in N hours", weekend trips, ideas -> find_reachable_stations (the app also draws them on the map).
+- Trips through several places ("A to B then C, a day in B") -> plan_trip.
+- Compare trains -> compare_trains. "Where does it stop longest" -> get_train_halts.
 - Station names that may match several stations -> search_stations first if unsure.
 
 FOLLOW-UPS
 - The CONVERSATION STATE section below lists the most recent train, station and results. Resolve "it", "its", "this train", "that station", "the first one", "the shortest" from it. If the user names a different train or station, use the one they name and ignore the state.
 - If it is genuinely unclear which train or station is meant, ask one short question instead of guessing.
 - Questions like "which one is shortest" can be answered from the listed results when durations are shown there; otherwise call the tool again.
+
+DEMO FEATURES (tools whose names start with demo_)
+- PNR finder, fares, seat availability, live running status and food menus are DEMOS: the data is simulated and is NOT real. Real PNR status, fares, seats and live status need approved access that this app does not have.
+- Whenever you use a demo tool, say clearly in your reply that it is a DEMO simulation (for example "DEMO result: ..."). Never present demo values as real, never say a PNR is confirmed or valid, and never use demo values to answer a question that needs real data.
+- If the user wants their real PNR status or real live status, say it is not connected and offer the demo or the timetable-based estimate instead.
+- Ordering food happens on the Services page; point the user there instead of "placing" an order yourself.
 
 STYLE
 - The app already shows train cards, route tables, results lists and maps from your tool calls, so keep your reply short (usually 1-4 sentences): highlight what matters, do not repeat every stop or train.
@@ -191,9 +203,25 @@ def _state_text(ctx: dict) -> str:
     return "\n".join(lines)
 
 
-def build_system_prompt(ctx: dict, now_ist: datetime) -> str:
+def sanitize_preferences(raw: Any) -> dict:
+    """Small, validated user preferences kept in the browser (home station only, for now)."""
+    out = {"home_station": None}
+    if isinstance(raw, dict):
+        out["home_station"] = _clean_station(raw.get("home_station"))
+    return out
+
+
+def build_system_prompt(ctx: dict, now_ist: datetime, language: str = "en", prefs: dict | None = None) -> str:
     today = now_ist.strftime("%A, %d %B %Y, %H:%M") + " IST"
-    return f"{SYSTEM_PROMPT}\nCURRENT DATE/TIME (India): {today}\n\n{_state_text(ctx)}\n"
+    extra = ""
+    if language == "hi":
+        extra += ("\nLANGUAGE: The user chose Hindi. Reply in Hindi (Devanagari script) unless they write in another language. "
+                  "Keep train names, station names and codes exactly as returned by the database.\n")
+    hs = (prefs or {}).get("home_station")
+    if hs:
+        extra += (f"\nUSER PREFERENCE (data): saved home station is {hs['code']} {hs.get('name') or ''}. "
+                  "Use it only when the user says things like \"from home\", \"my station\" or \"near me\".\n")
+    return f"{SYSTEM_PROMPT}\nCURRENT DATE/TIME (India): {today}\n{extra}\n{_state_text(ctx)}\n"
 
 
 # ───────────────────────── tool results -> model view / UI blocks / context ─────────────────────────
@@ -247,6 +275,10 @@ def _train_item(t: dict, journey: dict | None = None) -> dict:
     return item
 
 
+_DEMO_BLOCK = {"demo_pnr_lookup": "demo_pnr", "demo_fare_estimate": "demo_fare", "demo_seat_availability": "demo_seats",
+               "demo_live_status": "demo_live", "demo_food_menu": "demo_food_menu"}
+
+
 def make_block(name: str, args: dict, data: dict) -> dict | None:
     """UI block for a tool result, built purely from database output."""
     if not isinstance(data, dict) or not data.get("found"):
@@ -278,6 +310,29 @@ def make_block(name: str, args: dict, data: dict) -> dict | None:
                 "message": data["message"], "instances": data.get("instances", []),
                 "estimatedForIST": data["estimatedForIST"], "assumedNoon": data["assumedNoon"],
                 "disclaimer": data["disclaimer"], "isLiveTracking": False}
+    if name == "find_journeys_with_transfer":
+        return {"type": "transfer_results", "from": data["from"], "to": data["to"], "dayUsed": data["dayUsed"],
+                "options": data["options"], "optionsFound": data["optionsFound"], "note": data.get("note"),
+                "resolution": data.get("resolution")}
+    if name == "find_reachable_stations":
+        return {"type": "reachability", "origin": data["origin"], "stations": data["stations"],
+                "minHours": data["minHours"], "maxHours": data["maxHours"], "dayFilter": data.get("dayFilter"),
+                "reachableCount": data["reachableCount"], "withoutCoordinates": data["withoutCoordinates"],
+                "note": data.get("note")}
+    if name == "compare_trains":
+        return {"type": "train_comparison", "trains": data["trains"], "notFound": data.get("notFound", []),
+                "shortestScheduled": data.get("shortestScheduled"), "highestAverageSpeed": data.get("highestAverageSpeed"),
+                "fewestStops": data.get("fewestStops"), "note": data.get("note")}
+    if name == "get_train_halts":
+        return {"type": "halt_list", "train": data["train"], "halts": data["halts"], "minMinutes": data["minMinutes"],
+                "totalLongHalts": data["totalLongHalts"]}
+    if name == "plan_trip":
+        return {"type": "trip_plan", "stops": data["stops"], "legs": data["legs"], "startDay": data["startDay"],
+                "minStayHours": data["minStayHours"], "totalTravelSpan": data["totalTravelSpan"], "note": data.get("note")}
+    if name in _DEMO_BLOCK:
+        blk = {k: v for k, v in data.items() if k != "found"}
+        blk["type"] = _DEMO_BLOCK[name]
+        return blk
     return None
 
 
@@ -289,6 +344,10 @@ def _block_identity(blk: dict) -> tuple | None:
         return (t, tr.get("trainNumber"))
     if t == "station_card":
         return (t, blk["station"].get("code"))
+    if t == "demo_pnr":
+        return (t, blk.get("pnr"))
+    if t in ("demo_fare", "demo_seats", "demo_live"):
+        return (t, (blk.get("train") or {}).get("trainNumber"))
     return None
 
 
@@ -332,6 +391,35 @@ def update_context(ctx: dict, name: str, data: dict) -> None:
         if len(sts) == 1:
             ctx["focus_station"] = {"code": sts[0]["code"], "name": sts[0].get("name")}
             ctx["last_focus"] = "station"
+    elif name in ("get_train_halts", "demo_live_status", "demo_seat_availability", "demo_fare_estimate", "demo_pnr_lookup"):
+        t = data["train"]
+        ctx["focus_train"] = {"trainNumber": t["trainNumber"], "trainName": t.get("trainName")}
+        ctx["last_focus"] = "train"
+    elif name == "demo_food_menu":
+        st = data["station"]
+        ctx["focus_station"] = {"code": st["code"], "name": st.get("name")}
+        ctx["last_focus"] = "station"
+    elif name == "find_reachable_stations":
+        o = data["origin"]
+        ctx["focus_station"] = {"code": o["code"], "name": o.get("name")}
+        ctx["last_focus"] = "station"
+    elif name == "compare_trains":
+        ctx["last_results"] = {"kind": "trains", "label": "compared trains",
+                               "items": [_train_item(t) for t in data["trains"][:MAX_RESULT_ITEMS]]}
+        ctx["last_focus"] = "results"
+    elif name == "find_journeys_with_transfer":
+        a, b = data["from"], data["to"]
+        ctx["last_journey"] = {"from": {"code": a["code"], "name": a.get("name")},
+                               "to": {"code": b["code"], "name": b.get("name")}}
+        items = []
+        for i, opt in enumerate(data["options"], 1):
+            for leg in opt["legs"]:
+                tr = leg["train"]
+                items.append({"trainNumber": tr["trainNumber"], "trainName": f"{tr.get('trainName')} (option {i})",
+                              "departure": leg.get("departureTime"), "arrival": leg.get("arrivalTime"), "duration": leg.get("duration")})
+        ctx["last_results"] = {"kind": "journey", "label": f"{a.get('name')} to {b.get('name')} with one change",
+                               "items": items[:MAX_RESULT_ITEMS]}
+        ctx["last_focus"] = "results"
     elif name == "find_trains_between_stations":
         a, b = data["from"], data["to"]
         ctx["last_journey"] = {"from": {"code": a["code"], "name": a.get("name")},
@@ -355,6 +443,160 @@ def _focus_from_reply(ctx: dict, reply: str) -> None:
         ctx["last_focus"] = "train"
 
 
+# ───────────────────────── follow-up chips (deterministic, not model-written) ─────────────────────────
+
+_CHIPS = {
+    "en": {
+        "route_map": "Show the route of train {n} on the map", "where_now": "Where is train {n} expected now?",
+        "halts": "Where does train {n} stop longest?", "shortest": "Which one has the shortest scheduled journey?",
+        "evening": "Only trains leaving after 18:00", "one_change": "Show journeys with one change",
+        "after6": "Trains at {s} after 18:00", "reach": "Where can I go from {s} in 6 hours?",
+        "food": "Show the demo food menu at {s}", "far": "Only places more than 3 hours away",
+        "compare": "Compare trains {a} and {b}", "demo_seats": "Show demo seat availability for train {n}",
+        "demo_live": "Show the demo live status of train {n}", "route_of": "Show the route of train {n}",
+    },
+    "hi": {
+        "route_map": "ट्रेन {n} का रूट नक्शे पर दिखाओ", "where_now": "ट्रेन {n} अभी कहाँ होनी चाहिए?",
+        "halts": "ट्रेन {n} कहाँ सबसे ज़्यादा रुकती है?", "shortest": "सबसे कम समय वाली ट्रेन कौन सी है?",
+        "evening": "सिर्फ़ 18:00 के बाद वाली ट्रेनें", "one_change": "एक बदलाव वाली यात्राएँ दिखाओ",
+        "after6": "{s} पर 18:00 के बाद की ट्रेनें", "reach": "{s} से 6 घंटे में कहाँ जा सकता हूँ?",
+        "food": "{s} का डेमो खाना मेन्यू दिखाओ", "far": "सिर्फ़ 3 घंटे से दूर की जगहें",
+        "compare": "ट्रेन {a} और {b} की तुलना करो", "demo_seats": "ट्रेन {n} की डेमो सीट उपलब्धता दिखाओ",
+        "demo_live": "ट्रेन {n} का डेमो लाइव स्टेटस दिखाओ", "route_of": "ट्रेन {n} का रूट दिखाओ",
+    },
+}
+
+
+def suggest_followups(blocks: list[dict], ctx: dict, lang: str = "en", limit: int = 4) -> list[str]:
+    """Next-question chips computed from what was just shown (so they always make sense)."""
+    T = _CHIPS.get(lang, _CHIPS["en"])
+    out: list[str] = []
+
+    def add(key: str, **kw):
+        txt = T[key].format(**kw)
+        if txt not in out:
+            out.append(txt)
+
+    for b in blocks:
+        t = b.get("type")
+        if t == "train_card":
+            n = b["train"]["trainNumber"]; add("route_map", n=n); add("where_now", n=n); add("halts", n=n)
+        elif t == "train_route":
+            n = b["train"]["trainNumber"]; add("halts", n=n); add("where_now", n=n)
+        elif t == "journey_results":
+            add("shortest"); add("evening")
+            if b["trains"]:
+                add("route_of", n=b["trains"][0]["trainNumber"])
+            add("one_change")
+        elif t == "transfer_results":
+            if b["options"]:
+                add("route_of", n=b["options"][0]["legs"][0]["train"]["trainNumber"])
+        elif t == "station_card":
+            s = b["station"].get("name") or b["station"]["code"]
+            add("after6", s=s); add("reach", s=s); add("food", s=s)
+        elif t == "reachability":
+            add("far")
+            if b["stations"]:
+                add("route_of", n=b["stations"][0]["viaTrain"]["trainNumber"])
+        elif t == "train_comparison":
+            fastest = b.get("shortestScheduled") or b["trains"][0]["trainNumber"]
+            add("route_of", n=fastest); add("halts", n=fastest)
+        elif t == "position_estimate":
+            add("route_of", n=b["train"]["trainNumber"]); add("demo_live", n=b["train"]["trainNumber"])
+        elif t == "demo_pnr":
+            n = b["train"]["trainNumber"]; add("route_of", n=n); add("demo_seats", n=n)
+        elif t in ("demo_fare", "demo_seats", "demo_live"):
+            n = b["train"]["trainNumber"]; add("route_of", n=n)
+        elif t == "halt_list":
+            add("route_map", n=b["train"]["trainNumber"])
+    lr = ctx.get("last_results")
+    if lr and len(lr["items"]) >= 2 and not any("{" in c for c in out) and len(out) < limit:
+        add("compare", a=lr["items"][0]["trainNumber"], b=lr["items"][1]["trainNumber"])
+    return out[:limit]
+
+
+_STATUS = {
+    "en": {
+        "search_trains": "Searching trains for {query}", "get_train_details": "Looking up train {train_number}",
+        "get_train_route": "Fetching the route of train {train_number}", "search_stations": "Searching stations for {query}",
+        "get_station_details": "Looking up station {station}", "get_station_trains": "Finding trains that stop at {station}",
+        "get_trains_at_station": "Checking train times at {station}",
+        "find_trains_between_stations": "Finding direct trains from {from_station} to {to_station}",
+        "find_journeys_with_transfer": "Looking for one-change journeys from {from_station} to {to_station}",
+        "find_reachable_stations": "Finding stations reachable from {from_station}", "compare_trains": "Comparing the trains",
+        "get_train_halts": "Checking the halts of train {train_number}", "plan_trip": "Planning your trip",
+        "get_scheduled_position": "Estimating position from the timetable", "default": "Checking the railway database",
+        "demo": "Preparing a DEMO result",
+    },
+    "hi": {
+        "search_trains": "ट्रेन खोज रहा हूँ: {query}", "get_train_details": "ट्रेन {train_number} की जानकारी देख रहा हूँ",
+        "get_train_route": "ट्रेन {train_number} का रूट निकाल रहा हूँ", "search_stations": "स्टेशन खोज रहा हूँ: {query}",
+        "get_station_details": "स्टेशन {station} देख रहा हूँ", "get_station_trains": "{station} पर रुकने वाली ट्रेनें खोज रहा हूँ",
+        "get_trains_at_station": "{station} के ट्रेन समय देख रहा हूँ",
+        "find_trains_between_stations": "{from_station} से {to_station} की सीधी ट्रेनें खोज रहा हूँ",
+        "find_journeys_with_transfer": "{from_station} से {to_station} के लिए एक बदलाव वाले रास्ते खोज रहा हूँ",
+        "find_reachable_stations": "{from_station} से पहुँच सकने वाले स्टेशन खोज रहा हूँ", "compare_trains": "ट्रेनों की तुलना कर रहा हूँ",
+        "get_train_halts": "ट्रेन {train_number} के ठहराव देख रहा हूँ", "plan_trip": "आपकी यात्रा की योजना बना रहा हूँ",
+        "get_scheduled_position": "समय सारिणी से अनुमानित स्थिति निकाल रहा हूँ", "default": "रेलवे डेटाबेस देख रहा हूँ",
+        "demo": "डेमो परिणाम तैयार कर रहा हूँ",
+    },
+}
+
+
+class _Blank(dict):
+    def __missing__(self, key):
+        return "…"
+
+
+def status_text(name: str, args: Any, lang: str = "en") -> str:
+    """Friendly progress line for a tool call (arguments are cleaned; never raises)."""
+    table = _STATUS.get(lang, _STATUS["en"])
+    tpl = table["demo"] if str(name).startswith("demo_") else table.get(name, table["default"])
+    safe = _Blank({k: (_clean(v, 40) or "…") for k, v in (args.items() if isinstance(args, dict) else []) if isinstance(v, str)})
+    try:
+        return tpl.format_map(safe)
+    except (ValueError, IndexError, KeyError):
+        return table["default"]
+
+
+# ───────────────────────── tool-result cache ─────────────────────────
+
+import threading  # noqa: E402
+import time  # noqa: E402
+
+_UNCACHED = {"get_scheduled_position", "demo_live_status", "demo_pnr_lookup", "demo_seat_availability"}  # depend on "now"
+_CACHE_TTL = 600.0
+_CACHE_MAX = 500
+_cache: dict[str, tuple[float, dict]] = {}
+_cache_lock = threading.Lock()
+
+
+def cached_run_tool(name: str, args: Any, db=None) -> dict:
+    """tools.run_tool with a short in-memory cache for repeated lookups (the timetable rarely changes).
+    Never caches errors, not-found-because-DB-failed cases, or time-dependent tools."""
+    cacheable = (name not in _UNCACHED and isinstance(args, dict)
+                 and not (name in ("find_journeys_with_transfer", "plan_trip") and not args.get("day")))
+    key = f"{name}:{json.dumps(args, sort_keys=True, default=str)}" if cacheable else ""
+    if cacheable:
+        with _cache_lock:
+            hit = _cache.get(key)
+            if hit and time.monotonic() - hit[0] < _CACHE_TTL:
+                return json.loads(json.dumps(hit[1]))
+    result = tl.run_tool(name, args, db=db)
+    if cacheable:
+        with _cache_lock:
+            if len(_cache) >= _CACHE_MAX:
+                for k in sorted(_cache, key=lambda k: _cache[k][0])[:_CACHE_MAX // 5]:
+                    _cache.pop(k, None)
+            _cache[key] = (time.monotonic(), json.loads(json.dumps(result, default=str)))
+    return result
+
+
+def clear_cache() -> None:
+    with _cache_lock:
+        _cache.clear()
+
+
 # ───────────────────────── grounding guard ─────────────────────────
 
 _FIVE_DIGITS = re.compile(r"(?<![\d.:/-])\d{5}(?![\d.:/-])")
@@ -375,7 +617,8 @@ def _reply_text(parts: list[dict]) -> str:
 
 
 def chat(message: Any, history: Any, context: Any, *, provider, db=None, now: datetime | None = None,
-         run_tool: Callable = rt.run_tool) -> dict:
+         run_tool: Callable = tl.run_tool, language: str = "en", preferences: Any = None,
+         on_event: Callable | None = None) -> dict:
     """Run one assistant turn. Raises AssistantInputError, AIProviderError or
     railway_tools.DatabaseUnavailable; everything else is handled here."""
     if not isinstance(message, str) or not message.strip():
@@ -387,13 +630,15 @@ def chat(message: Any, history: Any, context: Any, *, provider, db=None, now: da
     now_ist = now or datetime.now(rt.IST).replace(tzinfo=None)
     ctx = sanitize_context(context)
     hist = sanitize_history(history)
-    system = build_system_prompt(ctx, now_ist)
+    language = "hi" if language == "hi" else "en"
+    prefs = sanitize_preferences(preferences)
+    system = build_system_prompt(ctx, now_ist, language, prefs)
     if hist and hist[-1]["role"] == "user":      # never send two user turns in a row
         hist[-1]["parts"][0]["text"] += "\n" + message
         contents: list[dict] = hist
     else:
         contents = hist + [{"role": "user", "parts": [{"text": message}]}]
-    declarations = rt.declarations()
+    declarations = tl.declarations()
 
     blocks: list[dict] = []
     seen_calls: set[str] = set()
@@ -414,6 +659,11 @@ def chat(message: Any, history: Any, context: Any, *, provider, db=None, now: da
             responses = []
             for call in calls:
                 name, args = call.get("name"), call.get("args") or {}
+                if on_event:
+                    try:
+                        on_event({"type": "status", "text": status_text(name, args, language)})
+                    except Exception:  # noqa: BLE001 - progress reporting must never break the answer
+                        logger.debug("on_event failed", exc_info=True)
                 try:
                     data = run_tool(name, args, db=db)
                     if name not in used_tools:
@@ -469,10 +719,13 @@ def chat(message: Any, history: Any, context: Any, *, provider, db=None, now: da
                  else "I couldn't put together an answer. Please try rephrasing your question.")
 
     _focus_from_reply(ctx, reply)
+    shown = blocks[:MAX_BLOCKS]
     return {
         "reply": reply,
-        "blocks": blocks[:MAX_BLOCKS],
+        "blocks": shown,
         "context": ctx,
+        "suggestions": suggest_followups(shown, ctx, language),
+        "demo": any(n in tl.DEMO_TOOLS for n in used_tools),
         "sources": used_tools,
         "provider": {"name": getattr(provider, "name", "unknown"), "model": getattr(provider, "model", None)},
     }

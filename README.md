@@ -59,7 +59,8 @@ IndianRailway/
 │   │   ├── services/api.js
 │   │   └── App.jsx
 │   ├── package.json
-│   └── vite.config.js
+│   ├── vite.config.js
+│   └── .env.example             # optional VITE_API_URL for deployment
 │
 └── README.md
 ```
@@ -157,7 +158,13 @@ proxy: { '/api': { target: 'http://localhost:8001', changeOrigin: true } }
 | GET | `/api/stations/{code}` | Station details |
 | GET | `/api/stations/{code}/trains` | Trains stopping at a station |
 | POST | `/api/assistant/chat` | One AI assistant conversation turn |
+| POST | `/api/assistant/stream` | Same as chat, as server-sent events (live progress steps, then the result) |
+| POST | `/api/assistant/ticket` | Read a ticket photo (processed in memory, never stored) |
 | GET | `/api/assistant/status` | Whether the AI is configured (never returns the key) |
+| GET | `/api/demo/pnr/{pnr}` | DEMO PNR finder (simulated) |
+| GET | `/api/demo/food/menu?station=` | DEMO food menu for a station |
+| POST | `/api/demo/food/order` | DEMO food order (nothing stored or sent) |
+| GET | `/api/demo/fare`, `/api/demo/seats`, `/api/demo/live/{train}` | DEMO fare, seat availability and running status |
 
 ---
 
@@ -188,6 +195,32 @@ FastAPI  -->  Gemini (function calling)  -->  asks for one of the fixed tools
 - Route maps reuse the existing `NationalMap` component in an `embedded` mode. Stops without stored coordinates are not drawn.
 - Timetable estimates are not live tracking. "Next station" answers use `journey_estimator.py` with Indian time and are always labelled as estimates.
 
+### Features
+
+| Area | What it does |
+|---|---|
+| One-change journeys | `find_journeys_with_transfer` finds connections at one station, respecting running days and layover limits |
+| Time-aware search | Departure window and "arrive by" filters on direct trains; weekday handling |
+| Trip planner | `plan_trip` chains direct trains through up to five stations with a minimum stay |
+| Reachability and discovery | `find_reachable_stations` ("where can I go in 6 hours") drawn on the map as markers; stations without stored coordinates are listed but never drawn |
+| Compare and halts | Side-by-side train comparison; longest scheduled halts |
+| Live progress and chips | Progress lines while it works, and follow-up question chips computed from what was shown |
+| Calendar and share | Download an .ics file (India time) or share a journey summary |
+| Voice | Speak a question and optionally hear the answer (browser speech features) |
+| Ticket photo | Reads train, stations and date from a photo, matches them to the database and asks you to confirm. PNR and passenger names are not read. The photo is not stored |
+| Hindi | Navbar, chat and Services labels, and the assistant replies in Hindi |
+| Preferences | Optional home station saved in your browser |
+| Services page | DEMO PNR finder, food ordering, fares, seats and running status |
+
+### DEMO features (simulated)
+
+Real PNR status, fares, seat availability, live running status and food ordering need approved access to IRCTC and Railways systems, or licensed data providers, which this project does not have. They are built as clearly labelled demonstrations:
+
+- Train, station and timetable facts still come from your MongoDB data.
+- Everything else (passengers, booking status, fares, seat counts, delays, menus, orders) is generated from the inputs and is not real.
+- Every demo result carries a DEMO banner, and the assistant is instructed to say it is a demo.
+- Demo food orders are kept only in your browser. Nothing is written to the database or sent to any vendor.
+
 ### What you can ask
 
 - "Tell me about train 12951."
@@ -204,14 +237,16 @@ FastAPI  -->  Gemini (function calling)  -->  asks for one of the fixed tools
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Any Gemini model that supports function calling |
 | `AI_TIMEOUT_SECONDS` | `30` | How long to wait for the AI before showing an error |
 | `ASSISTANT_RATE_LIMIT_PER_MIN` | `20` | Requests per minute per client IP |
+| `ASSISTANT_DAILY_LIMIT` | `300` | Requests per day per client IP (caps your AI spending) |
 
 Google retires models over time. If the assistant reports that the model was not found, run `python gemini_test.py <model-name>` from the `backend` folder (a small script that sends a test request) or check Google AI Studio for a current model, then update `GEMINI_MODEL`.
 
 ### Known limitations
 
-- Direct trains only. Connecting journeys are not searched.
+- Journeys with one change are supported; more than one change is not searched. Connections assume the first train is on time.
 - No live running status, delays, platforms, PNR status, fares or seat availability, because none of these are in the database.
-- Ticket-image understanding is not included yet and is planned as a next phase.
+- Ticket reading depends on the photo quality and on the AI model; always check the fields it shows.
+- Demo features are simulations and must not be used for real travel decisions.
 - The per-IP rate limit is held in memory, so it applies per backend process and resets on restart.
 
 ---
@@ -222,7 +257,7 @@ Google retires models over time. If the assistant reports that the model was not
 cd backend
 
 # Offline logic tests (no database or API key needed)
-python -m unittest tests.test_railway_tools tests.test_assistant_core tests.test_ai_provider -v
+python -m unittest tests.test_railway_tools tests.test_journey_tools tests.test_demo_tools tests.test_assistant_core tests.test_assistant_features tests.test_ai_provider tests.test_ticket_reader tests.test_data_quality tests.test_eval_runner -v
 
 # HTTP tests (need a reachable MongoDB, like the existing API tests)
 python -m pytest tests/test_assistant_api.py tests/test_api.py
@@ -230,6 +265,17 @@ python -m pytest tests/test_assistant_api.py tests/test_api.py
 # Live checks against your real MongoDB (and real Gemini if a key is set)
 python -m unittest tests.test_assistant_live -v
 ```
+
+Other tools (all read-only on the database):
+
+```bash
+python scripts/data_quality_report.py              # finds suspicious records, e.g. a train with 294 stops and no times
+python scripts/data_quality_report.py --explain    # adds a plain-language AI summary
+python scripts/run_assistant_eval.py               # a fixed list of questions run against your real database and model
+python scripts/run_assistant_eval.py --only route  # only questions whose id contains "route"
+```
+
+Run the evaluation script whenever you change prompts or switch Gemini models.
 
 The offline tests use synthetic records defined in `tests/fixtures_synthetic.py`. These exist only for testing and are never used by the application.
 
@@ -255,7 +301,17 @@ Free Render services sleep after about 15 minutes without traffic, and the first
 
 ### Frontend on Vercel
 
-Add `frontend/vercel.json` so that `/api` requests go to your backend:
+Import the repository in Vercel with `frontend` as the Root Directory. Vercel detects Vite automatically (build command `npm run build`, output directory `dist`). Then connect the frontend to the backend in one of two ways.
+
+**Option A: call the backend directly (recommended).** In Vercel, go to Settings, then Environment Variables, and add:
+
+```
+VITE_API_URL=https://<your-service>.onrender.com
+```
+
+Redeploy so the value is built in. Locally, leave `VITE_API_URL` unset and the Vite proxy keeps working. The value is public (it ends up in the built JavaScript), so never put secrets in `VITE_` variables. Set `ALLOWED_ORIGINS` on the backend to your Vercel URL.
+
+**Option B: forward requests with a rewrite.** Add `frontend/vercel.json` and leave `VITE_API_URL` unset:
 
 ```json
 {
@@ -265,7 +321,7 @@ Add `frontend/vercel.json` so that `/api` requests go to your backend:
 }
 ```
 
-Then import the repository in Vercel with `frontend` as the root directory. Vercel detects Vite automatically.
+Option A is simpler to debug and avoids an extra hop, which matters when the free backend is waking up.
 
 ---
 
