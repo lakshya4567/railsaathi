@@ -1,6 +1,6 @@
 import React from 'react'
 
-const TRACKING_URL = 'https://railtrackers.in/live-train-map'
+const TRACKING_URL = 'https://railradar.in/railradar'
 
 export default function LiveTracking() {
   return (
@@ -20,22 +20,22 @@ export default function LiveTracking() {
         <div className="live-tracking-frame-topbar">
           <div className="live-tracking-provider">
             <span className="live-tracking-provider-mark">R</span>
-            <span><strong>RailTrackers</strong><small>External website preview</small></span>
+            <span><strong>RailRadar</strong><small>External website preview</small></span>
           </div>
           <span className="live-tracking-trial">TRIAL EMBED</span>
         </div>
         <div className="live-tracking-frame-wrap">
           <iframe
             src={TRACKING_URL}
-            title="RailTrackers live train map"
+            title="RailRadar live train map"
             loading="lazy"
             referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
         </div>
         <div className="live-tracking-frame-footer">
-          <span>Tracking content is provided by RailTrackers.</span>
-          <a href={TRACKING_URL} target="_blank" rel="noreferrer">Visit RailTrackers ↗</a>
+          <span>Tracking content is provided by RailRadar.</span>
+          <a href={TRACKING_URL} target="_blank" rel="noreferrer">Visit RailRadar ↗</a>
         </div>
       </div>
 
