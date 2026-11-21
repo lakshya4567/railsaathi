@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getTrains, searchTrains } from '../services/api'
 import { TrainIcon } from './Icons'
+import TrainRouteSearch from './TrainRouteSearch'
 
 export default function Trains({ onSelectTrain }) {
   const [trains, setTrains] = useState([])
@@ -44,6 +45,7 @@ export default function Trains({ onSelectTrain }) {
 
   return (
     <div className="space-y-6 pb-16 animate-fade-in">
+      <TrainRouteSearch />
       {/* Header bar */}
       <div className="bg-[var(--c-slate-dark)] border border-[var(--c-slate-border)] rounded-3xl p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl">
         <div>
