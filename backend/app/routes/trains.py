@@ -47,6 +47,88 @@ def search_trains(
     return {"total": total, "page": page, "page_size": page_size, "results": items}
 
 
+
+@router.get("/route-search")
+def search_trains_between_stations(
+    from_station: str = Query(..., min_length=2, max_length=10),
+    to_station: str = Query(..., min_length=2, max_length=10),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+):
+    """Find trains whose stored ordered route includes both stations in that order."""
+    from_code = from_station.strip().upper()
+    to_code = to_station.strip().upper()
+    if from_code == to_code:
+        raise HTTPException(status_code=400, detail="Choose two different stations")
+
+    db = get_db()
+    station_projection = {"_id": 0, "code": 1, "name": 1}
+    from_doc = db["stations"].find_one({"code": from_code}, station_projection)
+    to_doc = db["stations"].find_one({"code": to_code}, station_projection)
+    if not from_doc:
+        raise HTTPException(status_code=404, detail=f"Origin station {from_code} not found")
+    if not to_doc:
+        raise HTTPException(status_code=404, detail=f"Destination station {to_code} not found")
+
+    # MongoDB's multikey index narrows the candidates to trains containing both stops.
+    candidates = db["trains"].find(
+        {"completeOrderedRoute.stationCode": {"$all": [from_code, to_code]}},
+        {
+            "_id": 0, "trainNumber": 1, "trainName": 1, "type": 1,
+            "source": 1, "destination": 1, "overallDistanceKm": 1,
+            "runningDays": 1, "completeOrderedRoute": 1,
+        },
+    ).sort("trainNumber", 1)
+
+    start_index = (page - 1) * page_size
+    total = 0
+    results = []
+    for train in candidates:
+        route = train.get("completeOrderedRoute") or []
+        origin_stops = [
+            stop for stop in route
+            if stop.get("stationCode", "").upper() == from_code
+        ]
+        destination_stops = [
+            stop for stop in route
+            if stop.get("stationCode", "").upper() == to_code
+        ]
+        matching_pair = None
+        for origin in origin_stops:
+            for destination in destination_stops:
+                if destination.get("sequence", 0) > origin.get("sequence", 0):
+                    matching_pair = (origin, destination)
+                    break
+            if matching_pair:
+                break
+        if not matching_pair:
+            continue
+
+        total += 1
+        if start_index < total <= start_index + page_size:
+            origin, destination = matching_pair
+            results.append({
+                "trainNumber": train.get("trainNumber"),
+                "trainName": train.get("trainName"),
+                "type": train.get("type"),
+                "source": train.get("source"),
+                "destination": train.get("destination"),
+                "overallDistanceKm": train.get("overallDistanceKm"),
+                "runningDays": train.get("runningDays"),
+                "fromStop": origin,
+                "toStop": destination,
+            })
+
+    return {
+        "fromStation": from_doc,
+        "toStation": to_doc,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "results": results,
+    }
+
+
 @router.get("/{train_number}")
 def get_train(train_number: str):
     db = get_db()
