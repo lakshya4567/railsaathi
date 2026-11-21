@@ -28,7 +28,7 @@ export default function LiveTracking() {
         <div className="live-tracking-frame-topbar">
           <div className="live-tracking-provider">
             <span className="live-tracking-provider-mark">R</span>
-            <span><strong>RailRadar</strong><small>External website preview</small></span>
+            <span><strong>RailSaathi Live Tracking</strong><small>Live map by RailRadar</small></span>
           </div>
           <button className="live-tracking-fullscreen" type="button" onClick={handleFullscreen}>
             <span aria-hidden="true">⛶</span> Full screen
