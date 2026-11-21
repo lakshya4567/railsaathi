@@ -154,7 +154,9 @@ main .leaflet-control-attribution {font-size:11px;}
 .live-tracking-provider strong,.live-tracking-provider small { display:block; }
 .live-tracking-provider strong { color:var(--ink); font-size:13px; }
 .live-tracking-provider small { margin-top:3px; color:var(--muted); font-size:11px; }
-.live-tracking-trial { padding:6px 9px; border:1px solid var(--line); border-radius:6px; color:var(--muted); font-size:10px; font-weight:850; letter-spacing:1px; white-space:nowrap; }
+.live-tracking-fullscreen { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:8px 12px; border:1px solid var(--line); border-radius:8px; background:var(--panel-soft); color:var(--ink); font:inherit; font-size:12px; font-weight:750; white-space:nowrap; cursor:pointer; transition:background .18s,border-color .18s; }
+.live-tracking-fullscreen:hover { background:var(--panel); border-color:var(--accent); }
+.live-tracking-fullscreen span { font-size:17px; line-height:1; }
 .live-tracking-frame-wrap { height:min(76vh,820px); min-height:520px; background:var(--panel-soft); }
 .live-tracking-frame-wrap iframe { display:block; width:100%; height:100%; border:0; background:var(--panel); }
 .live-tracking-frame-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 17px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
