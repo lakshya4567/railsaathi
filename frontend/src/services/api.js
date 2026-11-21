@@ -39,6 +39,25 @@ export async function getTrainDetail(trainNumber) {
   return res.json();
 }
 
+export async function searchTrainsBetweenStations(fromStation, toStation, page = 1, pageSize = 100) {
+  const params = new URLSearchParams({
+    from_station: fromStation,
+    to_station: toStation,
+    page: String(page),
+    page_size: String(pageSize),
+  })
+  const res = await fetch(`${API_BASE}/trains/route-search?${params.toString()}`)
+  if (!res.ok) {
+    let message = 'Could not search trains for this route'
+    try {
+      const body = await res.json()
+      if (typeof body.detail === 'string') message = body.detail
+    } catch { /* use fallback message */ }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 export async function getTrainRoute(trainNumber) {
   const res = await fetch(`${API_BASE}/trains/${trainNumber}/route`);
   if (!res.ok) throw new Error('Train route not found');
