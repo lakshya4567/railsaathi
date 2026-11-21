@@ -1,8 +1,16 @@
-import React from 'react'
+import React, { useRef } from 'react'
 
 const TRACKING_URL = 'https://railradar.in/railradar'
 
 export default function LiveTracking() {
+  const frameRef = useRef(null)
+
+  const handleFullscreen = () => {
+    const frame = frameRef.current
+    if (frame?.requestFullscreen) frame.requestFullscreen()
+    else if (frame?.webkitRequestFullscreen) frame.webkitRequestFullscreen()
+  }
+
   return (
     <section className="live-tracking-page">
       <div className="live-tracking-heading">
@@ -22,14 +30,18 @@ export default function LiveTracking() {
             <span className="live-tracking-provider-mark">R</span>
             <span><strong>RailRadar</strong><small>External website preview</small></span>
           </div>
-          <span className="live-tracking-trial">TRIAL EMBED</span>
+          <button className="live-tracking-fullscreen" type="button" onClick={handleFullscreen}>
+            <span aria-hidden="true">⛶</span> Full screen
+          </button>
         </div>
         <div className="live-tracking-frame-wrap">
           <iframe
+            ref={frameRef}
             src={TRACKING_URL}
             title="RailRadar live train map"
             loading="lazy"
             referrerPolicy="strict-origin-when-cross-origin"
+            allow="fullscreen"
             allowFullScreen
           />
         </div>
@@ -40,9 +52,8 @@ export default function LiveTracking() {
       </div>
 
       <p className="live-tracking-notice">
-        Trial integration. The external website controls what can be displayed here.
-        If the frame is blocked, use “Open source” to view it directly. Provider identity
-        and attribution are intentionally retained; obtain permission before public release.
+        Tracking content is provided by RailRadar. Use the full-screen button to expand the map
+        while keeping the RailSaathi page URL. Provider identity and attribution are retained.
       </p>
     </section>
   )
