@@ -6,6 +6,7 @@ import Stations from './components/Stations'
 import NationalMap from './components/NationalMap'
 import JourneyAssistant from './components/JourneyAssistant'
 import Services from './components/Services'
+import LiveTracking from './components/LiveTracking'
 import TrainDetailModal from './components/TrainDetailModal'
 import StationDetailModal from './components/StationDetailModal'
 import { TrainIcon } from './components/Icons'
@@ -90,6 +91,7 @@ export default function App() {
         {activeTab === 'services' && (
           <Services lang={lang} initial={servicesInitial} onAskAI={handleAskAI} />
         )}
+        {activeTab === 'live-tracking' && <LiveTracking />}
       </main>
 
       {/* Modals */}
