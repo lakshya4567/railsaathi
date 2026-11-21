@@ -7,6 +7,7 @@ const NAV = [
   { id: 'trains', key: 'nav.trains', icon: TrainIcon },
   { id: 'stations', key: 'nav.stations', icon: StationIcon },
   { id: 'map', key: 'nav.map', icon: MapIcon },
+  { id: 'live-tracking', label: 'Live Tracking', icon: TrainIcon },
   { id: 'assistant', key: 'nav.assistant', icon: SparkIcon },
   { id: 'services', key: 'nav.services', icon: TicketIcon },
 ]
