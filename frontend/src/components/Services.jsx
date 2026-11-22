@@ -95,15 +95,15 @@ function PnrTab() {
     <div className="space-y-4">
       <section className={`${card} p-4 sm:p-5 space-y-3`}>
         <div>
-          <h2 className="text-lg font-black text-[var(--c-text-main)]">RailYatri PNR Status</h2>
+          <h2 className="text-lg font-black text-[var(--c-text-main)]">ConfirmTkt PNR Status</h2>
           <p className="text-sm text-[var(--c-text-muted)] mt-1">
-            Check your PNR status using RailYatri. Enter your 10-digit PNR in the form below.
+            Check your PNR status using ConfirmTkt. Enter your 10-digit PNR in the form below.
           </p>
         </div>
         <div className="overflow-hidden rounded-xl border border-[var(--c-slate-border)] bg-white">
           <iframe
-            title="RailYatri PNR Status"
-            src="https://www.railyatri.in/pnr-status/"
+            title="ConfirmTkt PNR Status"
+            src="https://www.confirmtkt.com/pnr-status"
             className="block w-full"
             style={{ height: 'min(760px, 78vh)', minHeight: '560px', border: 0 }}
             loading="lazy"
@@ -111,16 +111,16 @@ function PnrTab() {
           />
         </div>
         <p className="text-xs text-[var(--c-text-muted)]">
-          If RailYatri does not appear inside this frame, open its PNR status page directly using the link below.
-          Your PNR is entered on RailYatri, a third-party railway information service, not submitted to RailSaathi.
+          If ConfirmTkt does not appear inside this frame, open its PNR status page directly using the link below.
+          Your PNR is entered on ConfirmTkt, a third-party railway information service, not submitted to RailSaathi.
         </p>
         <a
-          href="https://www.railyatri.in/pnr-status/"
+          href="https://www.confirmtkt.com/pnr-status"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm font-bold text-amber-500 hover:underline"
         >
-          Open RailYatri PNR Status <ExternalLinkIcon />
+          Open ConfirmTkt PNR Status <ExternalLinkIcon />
         </a>
       </section>
     </div>
