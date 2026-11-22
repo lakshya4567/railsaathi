@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AssistantBlocks from './AssistantBlocks'
 import {
-  searchTrains, getTrainRoute, demoPnr, demoFare, demoSeats, demoLive,
+  searchTrains, getTrainRoute, demoFare, demoSeats, demoLive,
 } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { tomorrowIso } from '../utils/ics'
@@ -90,27 +90,39 @@ function StopSelect({ stops, value, onChange, disabled }) {
 }
 
 /* ───────────── PNR ───────────── */
-function PnrTab({ t, lang, onAskAI }) {
-  const [pnr, setPnr] = useState('')
-  const [res, setRes] = useState(null)
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  const go = async (e) => {
-    e.preventDefault()
-    setErr(''); setRes(null); setBusy(true)
-    try { setRes(await demoPnr(pnr.trim())) } catch (x) { setErr(x.message) } finally { setBusy(false) }
-  }
+function PnrTab() {
   return (
     <div className="space-y-4">
-      <form onSubmit={go} className={`${card} p-5 space-y-3`}>
-        <label className={label}>{t('sv.pnrLabel')}</label>
-        <div className="flex gap-3 flex-wrap">
-          <input value={pnr} onChange={(e) => setPnr(e.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" placeholder="1234567890" className={`${field} max-w-xs font-mono tracking-widest`} />
-          <button className={primary} disabled={busy || pnr.length !== 10}>{busy ? t('sv.loading') : t('sv.pnrGo')}</button>
+      <section className={`${card} p-4 sm:p-5 space-y-3`}>
+        <div>
+          <h2 className="text-lg font-black text-[var(--c-text-main)]">Official Indian Railways PNR Enquiry</h2>
+          <p className="text-sm text-[var(--c-text-muted)] mt-1">
+            Check your booking status directly on the Indian Railways website. Enter your PNR in the form below.
+          </p>
         </div>
-      </form>
-      <ErrorNote message={err} />
-      {res && <AssistantBlocks lang={lang} isLatest blocks={[{ type: 'demo_pnr', ...res }]} onAsk={onAskAI} />}
+        <div className="overflow-hidden rounded-xl border border-[var(--c-slate-border)] bg-white">
+          <iframe
+            title="Official Indian Railways PNR Enquiry"
+            src="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en"
+            className="block w-full"
+            style={{ height: 'min(760px, 78vh)', minHeight: '560px', border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+        <p className="text-xs text-[var(--c-text-muted)]">
+          If the railway website does not appear inside this frame, open the official page directly using the link below.
+          Your PNR is entered on the Indian Railways website, not submitted to RailSaathi.
+        </p>
+        <a
+          href="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-bold text-amber-500 hover:underline"
+        >
+          Open official PNR Enquiry <ExternalLinkIcon />
+        </a>
+      </section>
     </div>
   )
 }
@@ -306,7 +318,7 @@ export default function Services({ lang = 'en', initial = null, onAskAI }) {
           </button>
         ))}
       </div>
-      {tab === 'pnr' && <PnrTab t={t} lang={lang} onAskAI={onAskAI} />}
+      {tab === 'pnr' && <PnrTab />}
       {tab === 'food' && <FoodTab t={t} initial={initial} />}
       {tab === 'fare' && <FareSeatsTab t={t} lang={lang} onAskAI={onAskAI} />}
       {tab === 'live' && <LiveTab t={t} lang={lang} onAskAI={onAskAI} />}
