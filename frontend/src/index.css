@@ -340,19 +340,10 @@ main .leaflet-control-attribution {font-size:11px;}
 }
 
 
-/* Slightly shift the complete desktop header row to the left. */
+/* Move only the RailSaathi brand and All Features control left.
+   The center navigation and right-side actions keep their original positions. */
 @media (min-width: 821px) {
-  .header-inner {
-    padding-left: calc(5.2% - 12px);
-    padding-right: calc(5.2% + 12px);
-  }
-  .all-features-trigger {
-    transform: translateX(-4px);
-  }
-}
-@media (min-width: 821px) and (max-width: 1100px) {
-  .header-inner {
-    padding-left: calc(3.5% - 8px);
-    padding-right: calc(3.5% + 8px);
+  .brand-area {
+    transform: translateX(-16px);
   }
 }
