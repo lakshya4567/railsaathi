@@ -177,7 +177,7 @@ export default function NationalMap({ initialTrainNumber, embedded = false, over
           )}
         </div>
 
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs flex items-center space-x-3">
+        <div className="network-map-note p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs flex items-center space-x-3">
           <InfoIcon className="text-base" />
           <span>
             <strong>Telemetry Note:</strong> Polylines connect scheduled sequence stops linearly and do not represent physical railway track curves.
