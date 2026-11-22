@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { MaximizeIcon } from './Icons'
+import { MaximizeIcon, ExternalLinkIcon } from './Icons'
 
 const TRACKING_URL = 'https://railradar.in/railradar'
 
@@ -21,7 +21,7 @@ export default function LiveTracking() {
           <p>Explore train movements and railway routes across India.</p>
         </div>
         <a className="live-tracking-open" href={TRACKING_URL} target="_blank" rel="noreferrer">
-          Open source <span aria-hidden="true">↗</span>
+          Open source <ExternalLinkIcon className="ml-1" />
         </a>
       </div>
 
@@ -48,7 +48,7 @@ export default function LiveTracking() {
         </div>
         <div className="live-tracking-frame-footer">
           <span>Tracking content is provided by RailRadar.</span>
-          <a href={TRACKING_URL} target="_blank" rel="noreferrer">Visit RailRadar ↗</a>
+          <a href={TRACKING_URL} target="_blank" rel="noreferrer">Visit RailRadar <ExternalLinkIcon className="ml-1" /></a>
         </div>
       </div>
 
