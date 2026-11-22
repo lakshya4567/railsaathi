@@ -340,18 +340,13 @@ main .leaflet-control-attribution {font-size:11px;}
 }
 
 
-/* Move only the RailSaathi brand and All Features control left.
+/* Fine-tune the left-side header group only.
    The center navigation and right-side actions keep their original positions. */
 @media (min-width: 821px) {
   .brand-area {
-    transform: translateX(-16px);
+    transform: translateX(-36px);
   }
-}
-
-
-/* Give the All Features control its own extra left shift. */
-@media (min-width: 821px) {
   .all-features-trigger {
-    transform: translateX(-16px);
+    transform: translateX(-20px);
   }
 }
