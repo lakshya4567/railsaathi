@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getStationDetail, getStationTrains } from '../services/api'
-import { CloseIcon } from './Icons'
+import { CloseIcon, ArrowRightIcon } from './Icons'
 
 export default function StationDetailModal({ stationCode, onClose, onSelectTrain }) {
   const [station, setStation] = useState(null)
@@ -112,7 +112,7 @@ export default function StationDetailModal({ stationCode, onClose, onSelectTrain
                       </p>
                     </div>
                     <span className="text-xs font-bold text-blue-400 group-hover:translate-x-1 transition-transform">
-                      Timetable →
+                      Timetable <ArrowRightIcon className="ml-1 inline" />
                     </span>
                   </div>
                 ))}
