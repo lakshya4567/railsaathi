@@ -476,3 +476,21 @@ main .leaflet-control-attribution {font-size:11px;}
   color: #a5b3aa !important;
   opacity: 1;
 }
+
+
+/* Network map orange information notice: preserve strong readable text in light mode. */
+[data-theme="light"] main .network-map-note {
+  color: #713817 !important;
+  background: #f5e6cf !important;
+  border-color: #c98742 !important;
+}
+[data-theme="light"] main .network-map-note strong {
+  color: #653014 !important;
+}
+[data-theme="light"] main .network-map-note svg {
+  color: #713817 !important;
+  flex-shrink: 0;
+}
+[data-theme="dark"] main .network-map-note {
+  color: #f4c78d;
+}
