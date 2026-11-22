@@ -5,7 +5,7 @@ import {
 } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { tomorrowIso } from '../utils/ics'
-import { TicketIcon, FoodIcon, ClockIcon, WarningIcon, PlusIcon, MinusIcon, CheckIcon, CloseIcon, SearchIcon, Dot } from './Icons'
+import { TicketIcon, FoodIcon, ClockIcon, WarningIcon, CloseIcon, SearchIcon } from './Icons'
 
 const card = 'bg-[var(--c-slate-dark)] border border-[var(--c-slate-border)] rounded-2xl shadow-lg'
 const field = 'input bg-[var(--c-slate-dark)] border-[var(--c-slate-border)] text-sm py-2.5 px-3.5 rounded-xl w-full'
