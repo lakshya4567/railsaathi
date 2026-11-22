@@ -95,15 +95,15 @@ function PnrTab() {
     <div className="space-y-4">
       <section className={`${card} p-4 sm:p-5 space-y-3`}>
         <div>
-          <h2 className="text-lg font-black text-[var(--c-text-main)]">Official Indian Railways PNR Enquiry</h2>
+          <h2 className="text-lg font-black text-[var(--c-text-main)]">eRail PNR Status</h2>
           <p className="text-sm text-[var(--c-text-muted)] mt-1">
             Check your booking status directly on the Indian Railways website. Enter your PNR in the form below.
           </p>
         </div>
         <div className="overflow-hidden rounded-xl border border-[var(--c-slate-border)] bg-white">
           <iframe
-            title="Official Indian Railways PNR Enquiry"
-            src="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en"
+            title="eRail PNR Status"
+            src="https://erail.in/pnr-status"
             className="block w-full"
             style={{ height: 'min(760px, 78vh)', minHeight: '560px', border: 0 }}
             loading="lazy"
@@ -111,16 +111,16 @@ function PnrTab() {
           />
         </div>
         <p className="text-xs text-[var(--c-text-muted)]">
-          If the railway website does not appear inside this frame, open the official page directly using the link below.
-          Your PNR is entered on the Indian Railways website, not submitted to RailSaathi.
+          If the railway website does not appear inside this frame, open the eRail page directly using the link below.
+          Your PNR is entered on eRail, not submitted to RailSaathi. eRail is a third-party service, not the railway authority.
         </p>
         <a
-          href="https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en"
+          href="https://erail.in/pnr-status"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm font-bold text-amber-500 hover:underline"
         >
-          Open official PNR Enquiry <ExternalLinkIcon />
+          Open eRail PNR Status <ExternalLinkIcon />
         </a>
       </section>
     </div>
