@@ -120,13 +120,15 @@ function FoodTab() {
   const [pnr, setPnr] = useState('')
   const [notice, setNotice] = useState('')
   const validPnr = /^\d{10}$/.test(pnr)
-  const copyPnr = async () => {
+  const openIrctc = async () => {
     if (!validPnr) return
+    // Open the tab directly in the click handler so popup blockers allow it.
+    window.open('https://ecatering.irctc.co.in/', '_blank', 'noopener,noreferrer')
     try {
       await navigator.clipboard.writeText(pnr)
-      setNotice('PNR copied. Open the official IRCTC page and paste it into the PNR field.')
+      setNotice('Your PNR has been copied. Switch to the IRCTC tab and paste it into the PNR field.')
     } catch {
-      setNotice('Copy was unavailable. You can enter your PNR directly on the official IRCTC page.')
+      setNotice('IRCTC opened. Clipboard access was unavailable, so please type your PNR on the official page.')
     }
   }
 
@@ -152,15 +154,7 @@ function FoodTab() {
               placeholder="Enter your PNR"
               className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
             />
-            <button type="button" className={primary} disabled={!validPnr} onClick={copyPnr}>Copy PNR</button>
-            <a
-              href="https://ecatering.irctc.co.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${primary} inline-flex items-center justify-center text-center`}
-            >
-              Open official IRCTC eCatering ↗
-            </a>
+            <button type="button" className={primary} disabled={!validPnr} onClick={openIrctc}>Copy PNR &amp; Open IRCTC ↗</button>
           </div>
           {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to copy your PNR.</p>}
           {notice && <p role="status" className="text-sm text-emerald-400">{notice}</p>}
