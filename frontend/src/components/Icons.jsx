@@ -102,3 +102,5 @@ export const WarningIcon = make(<><path d="M12 3.5 2.5 20h19L12 3.5Z" /><path d=
 export function Dot({ className = 'bg-slate-400' }) {
   return <span aria-hidden="true" className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${className}`} />
 }
+
+export const MaximizeIcon = make(<><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" /><path d="M3 3l6 6M21 3l-6 6M3 21l6-6M21 21l-6-6" /></>);
