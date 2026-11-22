@@ -4,7 +4,7 @@ import { streamAssistantMessage, getAssistantStatus, readTicket, searchStations 
 import { makeT } from '../utils/i18n'
 import { loadPrefs, savePrefs } from '../utils/prefs'
 import { prepareImage } from '../utils/image'
-import { MicIcon, ImageIcon, SettingsIcon, SpeakerIcon, CloseIcon, SearchIcon, CheckIcon, SendIcon } from './Icons'
+import { MicIcon, ImageIcon, SettingsIcon, SpeakerIcon, CloseIcon, SearchIcon, CheckIcon, SendIcon, ChevronRightIcon } from './Icons'
 
 const MAX_HISTORY = 10 // recent messages sent along with each question
 const STORE_KEY = 'railsaathi_assistant_v2'
@@ -283,7 +283,7 @@ export default function JourneyAssistant({
               <div data-testid="assistant-loading" className="bg-[var(--c-slate-surface)] border border-[var(--c-slate-border)] text-[var(--c-text-muted)] rounded-2xl rounded-bl-none px-5 py-3.5 text-sm shadow-lg font-mono space-y-1">
                 {steps.length === 0 ? <div className="italic">{t('ai.checking')}</div> : steps.map((s, i) => (
                   <div key={i} className={i === steps.length - 1 ? 'text-[var(--c-text-main)]' : 'opacity-60'}>
-                    {i === steps.length - 1 ? <span className="mr-1.5">›</span> : <CheckIcon className="mr-1.5 text-emerald-400" />}{s}
+                    {i === steps.length - 1 ? <ChevronRightIcon className="mr-1.5" /> : <CheckIcon className="mr-1.5 text-emerald-400" />}{s}
                   </div>
                 ))}
               </div>
