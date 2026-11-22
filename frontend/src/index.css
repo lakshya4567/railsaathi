@@ -355,3 +355,124 @@ main .leaflet-control-attribution {font-size:11px;}
     transform: translateX(-16px);
   }
 }
+
+
+/* Global contrast pass across every RailSaathi page. */
+/* Keep legacy page components readable when the warm light theme is active. */
+[data-theme="light"] main {
+  --page-ink-strong: #26372f;
+  --page-ink-muted: #526158;
+  --page-ink-soft: #637168;
+  --page-border-strong: #c8baa6;
+}
+[data-theme="light"] main [class*="text-slate-600"],
+[data-theme="light"] main [class*="text-slate-700"],
+[data-theme="light"] main [class*="text-slate-800"],
+[data-theme="light"] main [class*="text-gray-600"],
+[data-theme="light"] main [class*="text-gray-700"],
+[data-theme="light"] main [class*="text-gray-800"] {
+  color: var(--page-ink-strong) !important;
+}
+[data-theme="light"] main [class*="text-slate-400"],
+[data-theme="light"] main [class*="text-slate-500"],
+[data-theme="light"] main [class*="text-gray-400"],
+[data-theme="light"] main [class*="text-gray-500"],
+[data-theme="light"] main [class*="text-zinc-400"],
+[data-theme="light"] main [class*="text-zinc-500"] {
+  color: var(--page-ink-muted) !important;
+}
+[data-theme="light"] main [class*="bg-slate-950"],
+[data-theme="light"] main [class*="bg-slate-900"],
+[data-theme="light"] main [class*="bg-slate-800"],
+[data-theme="light"] main [class*="bg-gray-950"],
+[data-theme="light"] main [class*="bg-gray-900"],
+[data-theme="light"] main [class*="bg-gray-800"],
+[data-theme="light"] main [class*="bg-zinc-900"],
+[data-theme="light"] main [class*="bg-zinc-800"] {
+  background-color: #e9e1d3 !important;
+}
+[data-theme="light"] main [class*="border-slate-700"],
+[data-theme="light"] main [class*="border-slate-800"],
+[data-theme="light"] main [class*="border-slate-600"],
+[data-theme="light"] main [class*="border-gray-700"],
+[data-theme="light"] main [class*="border-gray-800"],
+[data-theme="light"] main [class*="border-zinc-700"],
+[data-theme="light"] main [class*="border-zinc-800"] {
+  border-color: var(--page-border-strong) !important;
+}
+[data-theme="light"] main input,
+[data-theme="light"] main textarea,
+[data-theme="light"] main select {
+  color: var(--page-ink-strong) !important;
+  caret-color: var(--accent);
+}
+[data-theme="light"] main input::placeholder,
+[data-theme="light"] main textarea::placeholder {
+  color: var(--page-ink-soft) !important;
+  opacity: 1;
+}
+[data-theme="light"] main label,
+[data-theme="light"] main small {
+  color: inherit;
+}
+[data-theme="light"] main table th {
+  color: var(--page-ink-muted) !important;
+}
+[data-theme="light"] main table td {
+  color: var(--page-ink-strong);
+}
+[data-theme="light"] main a:not([class*="bg-"]) {
+  text-decoration-color: currentColor;
+}
+[data-theme="light"] main [class*="bg-amber-500"],
+[data-theme="light"] main [class*="bg-amber-600"] {
+  color: #fff !important;
+}
+[data-theme="light"] main [class*="bg-emerald-500"],
+[data-theme="light"] main [class*="bg-green-600"],
+[data-theme="light"] main [class*="bg-blue-600"],
+[data-theme="light"] main [class*="bg-red-600"] {
+  color: #fff !important;
+}
+[data-theme="light"] main [class*="text-red-400"],
+[data-theme="light"] main [class*="text-rose-400"] {
+  color: #a83232 !important;
+}
+[data-theme="light"] main [class*="text-emerald-400"],
+[data-theme="light"] main [class*="text-green-400"] {
+  color: #286348 !important;
+}
+[data-theme="light"] main [class*="text-blue-400"],
+[data-theme="light"] main [class*="text-cyan-400"] {
+  color: #315f78 !important;
+}
+[data-theme="light"] main [class*="text-amber-400"],
+[data-theme="light"] main [class*="text-orange-400"] {
+  color: #8f461f !important;
+}
+[data-theme="light"] main button:focus-visible,
+[data-theme="light"] main a:focus-visible,
+[data-theme="light"] main input:focus-visible,
+[data-theme="light"] main select:focus-visible,
+[data-theme="light"] main textarea:focus-visible {
+  outline-color: #8f461f;
+}
+[data-theme="light"] main [class*="opacity-50"],
+[data-theme="light"] main [class*="opacity-60"] {
+  filter: saturate(.92);
+}
+[data-theme="dark"] main [class*="text-slate-400"],
+[data-theme="dark"] main [class*="text-gray-400"],
+[data-theme="dark"] main [class*="text-zinc-400"] {
+  color: #b3c0b8 !important;
+}
+[data-theme="dark"] main [class*="text-slate-500"],
+[data-theme="dark"] main [class*="text-gray-500"],
+[data-theme="dark"] main [class*="text-zinc-500"] {
+  color: #a5b3aa !important;
+}
+[data-theme="dark"] main input::placeholder,
+[data-theme="dark"] main textarea::placeholder {
+  color: #a5b3aa !important;
+  opacity: 1;
+}
