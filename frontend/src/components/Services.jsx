@@ -5,7 +5,7 @@ import {
 } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { tomorrowIso } from '../utils/ics'
-import { TicketIcon, FoodIcon, ClockIcon, WarningIcon, CloseIcon, SearchIcon } from './Icons'
+import { TicketIcon, FoodIcon, ClockIcon, WarningIcon, CloseIcon, SearchIcon, ExternalLinkIcon } from './Icons'
 
 const card = 'bg-[var(--c-slate-dark)] border border-[var(--c-slate-border)] rounded-2xl shadow-lg'
 const field = 'input bg-[var(--c-slate-dark)] border-[var(--c-slate-border)] text-sm py-2.5 px-3.5 rounded-xl w-full'
@@ -154,7 +154,7 @@ function FoodTab() {
               placeholder="Enter your PNR"
               className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
             />
-            <button type="button" className={primary} disabled={!validPnr} onClick={openIrctc}>Copy PNR &amp; Open IRCTC ↗</button>
+            <button type="button" className={primary} disabled={!validPnr} onClick={openIrctc}>Copy PNR &amp; Open IRCTC <ExternalLinkIcon className="ml-1 inline" /></button>
           </div>
           {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to copy your PNR.</p>}
           {notice && <p role="status" className="text-sm text-emerald-400">{notice}</p>}
@@ -172,8 +172,8 @@ function FoodTab() {
           <li>Keep the order confirmation and delivery details handy. Be at your allotted seat or berth when the train reaches the selected station.</li>
         </ol>
         <div className="flex flex-wrap gap-3">
-          <a href="https://ecatering.irctc.co.in/" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Official IRCTC eCatering website ↗</a>
-          <a href="https://ecatering.irctc.co.in/pages/app-for-ordering-food-in-train" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Food on Track app information ↗</a>
+          <a href="https://ecatering.irctc.co.in/" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Official IRCTC eCatering website <ExternalLinkIcon className="ml-1 inline" /></a>
+          <a href="https://ecatering.irctc.co.in/pages/app-for-ordering-food-in-train" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Food on Track app information <ExternalLinkIcon className="ml-1 inline" /></a>
         </div>
       </section>
 
