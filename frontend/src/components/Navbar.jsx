@@ -38,7 +38,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenServices = () =>
           <div className="brand-area">
             <button className="all-features-trigger" type="button" onClick={() => setSidebarOpen(true)} aria-expanded={sidebarOpen} aria-controls="features-sidebar">
               <span className="all-features-bars"><i /><i /><i /></span>
-              <span>All Features</span>
+              
             </button>
             <button className="brand-lockup" onClick={() => navigate('home')} aria-label="RailSaathi overview">
               <span className="brand-mark"><span>R</span><i /></span>
