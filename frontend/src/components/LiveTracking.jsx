@@ -1,4 +1,5 @@
 import React, { useRef } from 'react'
+import { MaximizeIcon } from './Icons'
 
 const TRACKING_URL = 'https://railradar.in/railradar'
 
@@ -31,7 +32,7 @@ export default function LiveTracking() {
             <span><strong>RailSaathi Live Tracking</strong><small>Live map by RailRadar</small></span>
           </div>
           <button className="live-tracking-fullscreen" type="button" onClick={handleFullscreen}>
-            <span aria-hidden="true">⛶</span> Full screen
+            <MaximizeIcon /> Full screen
           </button>
         </div>
         <div className="live-tracking-frame-wrap">
