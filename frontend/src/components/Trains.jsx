@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getTrains, searchTrains } from '../services/api'
-import { TrainIcon } from './Icons'
+import { TrainIcon, ArrowRightIcon } from './Icons'
 import TrainRouteSearch from './TrainRouteSearch'
 
 export default function Trains({ onSelectTrain }) {
@@ -118,7 +118,7 @@ export default function Trains({ onSelectTrain }) {
                         onClick={() => onSelectTrain(t.trainNumber)}
                         className="px-3.5 py-1.5 rounded-lg bg-[var(--c-slate-surface)] border border-[var(--c-slate-border)] hover:border-amber-500/50 text-xs font-bold transition shadow-sm"
                       >
-                        Timetable →
+                        Timetable <ArrowRightIcon className="ml-1 inline" />
                       </button>
                     </td>
                   </tr>
