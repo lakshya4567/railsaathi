@@ -104,3 +104,7 @@ export function Dot({ className = 'bg-slate-400' }) {
 }
 
 export const MaximizeIcon = make(<><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5" /><path d="M3 3l6 6M21 3l-6 6M3 21l6-6M21 21l-6-6" /></>);
+
+export const ArrowRightIcon = make(<><path d="M4 12h15" /><path d="m13 5 7 7-7 7" /></>);
+export const ExternalLinkIcon = make(<><path d="M14 4h6v6" /><path d="M20 4 11 13" /><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6" /></>);
+export const ChevronRightIcon = make(<path d="m9 18 6-6-6-6" />);
