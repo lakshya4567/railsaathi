@@ -1,22 +1,8 @@
-import React, { useState } from 'react'
-import { searchGlobal } from '../services/api'
-import { SparkIcon, SearchIcon, EnterIcon, TrainIcon, StationIcon, MapIcon, WaveIcon, CrosshairIcon, ZigzagIcon, ArrowUpRightIcon } from './Icons'
+import React from 'react'
+import { SparkIcon, TrainIcon, StationIcon, MapIcon, WaveIcon, CrosshairIcon, ZigzagIcon } from './Icons'
+import TrainRouteSearch from './TrainRouteSearch'
 
 export default function Home({ setActiveTab, onSelectTrain, onSelectStation, onAskAI }) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleSearch = async (e) => {
-    e.preventDefault()
-    if (!query.trim()) return
-    setLoading(true); setError(null)
-    try { setResults(await searchGlobal(query.trim())) }
-    catch { setError('We could not complete that search. Check your connection and try again.') }
-    finally { setLoading(false) }
-  }
-
   return (
     <div className="home-page">
       <section className="home-hero">
@@ -35,24 +21,8 @@ export default function Home({ setActiveTab, onSelectTrain, onSelectStation, onA
           <div className="hero-station-label label-right"><span>02</span> CONNECT</div>
         </div>
 
-        <div className="journey-search-card">
-          <div className="search-card-heading"><div><span className="mini-eyebrow">FIND YOUR WAY</span><h2>What are you looking for?</h2></div><span className="search-spark"><SparkIcon /></span></div>
-          <form onSubmit={handleSearch} className="main-search-form">
-            <label className="search-input-wrap"><span className="search-symbol"><SearchIcon /></span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Train name, train number or station code" aria-label="Search trains and stations"/><kbd><EnterIcon /></kbd></label>
-            <button type="submit" disabled={loading || !query.trim()}>{loading ? 'Searching…' : 'Search'} <span>→</span></button>
-          </form>
-          <div className="search-hints"><span>TRY SEARCHING</span><button type="button" onClick={() => setQuery('12951')}>12951</button><button type="button" onClick={() => setQuery('New Delhi')}>New Delhi</button><button type="button" onClick={() => setQuery('Mumbai')}>Mumbai</button>{onAskAI && query.trim().length > 2 && <button type="button" onClick={() => onAskAI(query.trim())}>Ask AI about this</button>}</div>
-          {error && <p className="search-error">{error}</p>}
-        </div>
+        <div className="home-route-search"><TrainRouteSearch /></div>
       </section>
-
-      {results && <section className="search-results-panel">
-        <div className="section-heading"><div><span className="mini-eyebrow">YOUR SEARCH</span><h2>Results for “{results.query}”</h2></div><button className="text-action" onClick={() => setResults(null)}>Clear results ×</button></div>
-        <div className="results-grid">
-          <div className="results-group"><h3>TRAINS <span>{results.trains.total}</span></h3>{results.trains.results.length ? results.trains.results.map(t => <button className="result-row" key={t.trainNumber} onClick={() => onSelectTrain(t.trainNumber)}><span className="result-code">{t.trainNumber}</span><span className="result-main"><b>{t.trainName}</b><small>{t.source?.name} → {t.destination?.name}</small></span><span className="result-arrow"><ArrowUpRightIcon /></span></button>) : <p className="empty-note">No matching trains found.</p>}</div>
-          <div className="results-group"><h3>STATIONS <span>{results.stations.total}</span></h3>{results.stations.results.length ? results.stations.results.map(s => <button className="result-row" key={s.code} onClick={() => onSelectStation(s.code)}><span className="result-code">{s.code}</span><span className="result-main"><b>{s.name}</b><small>{s.state || 'India'}{s.zone ? ` · ${s.zone} zone` : ''}</small></span><span className="result-arrow"><ArrowUpRightIcon /></span></button>) : <p className="empty-note">No matching stations found.</p>}</div>
-        </div>
-      </section>}
 
       <section className="explore-section">
         <div className="section-heading"><div><span className="mini-eyebrow">THE RAILSAATHI EXPERIENCE</span><h2>Everything for the journey.</h2></div><span className="section-aside">BUILT AROUND THE WAY INDIA TRAVELS</span></div>
