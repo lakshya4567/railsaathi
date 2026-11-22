@@ -119,7 +119,7 @@ function PnrTab({ t, lang, onAskAI }) {
 function FoodTab() {
   const [pnr, setPnr] = useState('')
   const [notice, setNotice] = useState('')
-  const validPnr = /^\\d{10}$/.test(pnr)
+  const validPnr = /^\d{10}$/.test(pnr)
   const copyPnr = async () => {
     if (!validPnr) return
     try {
@@ -145,7 +145,7 @@ function FoodTab() {
             <input
               id="food-pnr"
               value={pnr}
-              onChange={(e) => { setPnr(e.target.value.replace(/\\D/g, '').slice(0, 10)); setNotice('') }}
+              onChange={(e) => { setPnr(e.target.value.replace(/\D/g, '').slice(0, 10)); setNotice('') }}
               inputMode="numeric"
               autoComplete="off"
               maxLength={10}
