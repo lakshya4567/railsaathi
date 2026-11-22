@@ -14,7 +14,7 @@ const NAV = [
 
 export default function Navbar({ activeTab, setActiveTab, theme, setTheme, lang = 'en', setLang = () => {} }) {
   const t = makeT(lang)
-  const navItems = NAV.map((n) => ({ ...n, label: t(n.key) }))
+  const navItems = NAV.map((n) => ({ ...n, label: n.key ? t(n.key) : n.label }))
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
