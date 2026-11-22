@@ -53,6 +53,7 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onOpenServices={handleOpenServices}
         theme={theme}
         setTheme={setTheme}
         lang={lang}
