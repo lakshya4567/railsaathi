@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getStations, searchStations } from '../services/api'
-import { StationIcon } from './Icons'
+import { StationIcon, ArrowRightIcon } from './Icons'
 
 export default function Stations({ onSelectStation }) {
   const [stations, setStations] = useState([])
@@ -117,7 +117,7 @@ export default function Stations({ onSelectStation }) {
                         onClick={() => onSelectStation(s.code)}
                         className="px-3.5 py-1.5 rounded-lg bg-[var(--c-slate-surface)] border border-[var(--c-slate-border)] hover:border-amber-500/50 text-xs font-bold transition shadow-sm"
                       >
-                        Trains Here →
+                        Trains Here <ArrowRightIcon className="ml-1 inline" />
                       </button>
                     </td>
                   </tr>
