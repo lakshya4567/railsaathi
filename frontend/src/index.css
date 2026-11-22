@@ -347,3 +347,11 @@ main .leaflet-control-attribution {font-size:11px;}
     transform: translateX(-16px);
   }
 }
+
+
+/* Give the All Features control its own extra left shift. */
+@media (min-width: 821px) {
+  .all-features-trigger {
+    transform: translateX(-16px);
+  }
+}
