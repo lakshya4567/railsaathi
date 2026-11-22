@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import AssistantBlocks from './AssistantBlocks'
 import {
-  searchTrains, getTrainRoute, demoPnr, demoFoodMenu, demoFoodOrder, demoFare, demoSeats, demoLive,
+  searchTrains, getTrainRoute, demoPnr, demoFare, demoSeats, demoLive,
 } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { tomorrowIso } from '../utils/ics'
-import { loadOrders, saveOrders, addOrder, stageIndex, cartTotal, cartItems } from '../utils/orders'
 import { TicketIcon, FoodIcon, ClockIcon, WarningIcon, PlusIcon, MinusIcon, CheckIcon, CloseIcon, SearchIcon, Dot } from './Icons'
 
 const card = 'bg-[var(--c-slate-dark)] border border-[var(--c-slate-border)] rounded-2xl shadow-lg'
@@ -293,10 +292,12 @@ export default function Services({ lang = 'en', initial = null, onAskAI }) {
         <h1 className="text-3xl font-black">{t('sv.title')}</h1>
         <p className="text-sm text-[var(--c-text-muted)] mt-1">{t('sv.subtitle')}</p>
       </div>
-      <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-500/30 text-amber-500 text-sm flex items-start gap-3">
-        <WarningIcon className="text-lg mt-0.5" />
-        <p><strong className="font-mono tracking-wider">{t('demo.banner')}</strong> {t('sv.demoAll')}</p>
-      </div>
+      {tab !== 'food' && (
+        <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-500/30 text-amber-500 text-sm flex items-start gap-3">
+          <WarningIcon className="text-lg mt-0.5" />
+          <p><strong className="font-mono tracking-wider">{t('demo.banner')}</strong> {t('sv.demoAll')}</p>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {tabs.map((x) => (
           <button
