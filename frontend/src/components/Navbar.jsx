@@ -42,7 +42,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenServices = () =>
             </button>
             <button className="brand-lockup" onClick={() => navigate('home')} aria-label="RailSaathi overview">
               <span className="brand-mark"><span>R</span><i /></span>
-              <span className="brand-copy"><strong>railsaathi<span>.</span></strong><small>INDIA, CONNECTED BY RAIL</small></span>
+              <span className="brand-copy"><strong>Railsaathi<span>.</span></strong><small>INDIA, CONNECTED BY RAIL</small></span>
             </button>
           </div>
 
