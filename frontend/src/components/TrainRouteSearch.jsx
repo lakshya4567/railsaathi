@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { searchStations, searchTrainsBetweenStations } from '../services/api'
+import { SwapIcon, ArrowRightIcon } from './Icons'
 
 function StationPicker({ label, value, selected, onChange, onSelect, placeholder }) {
   const [suggestions, setSuggestions] = useState([])
@@ -125,7 +126,7 @@ export default function TrainRouteSearch() {
           onSelect={(station) => { setFromStation(station); setFromText(`${station.name} (${station.code})`); setSearched(false) }}
           placeholder="Search station name or code" />
         <button type="button" onClick={swapStations} title="Swap stations"
-          className="h-12 w-12 justify-self-center rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] text-[var(--c-text-muted)] hover:text-amber-500 text-xl">⇄</button>
+          className="h-12 w-12 justify-self-center rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] text-[var(--c-text-muted)] hover:text-amber-500 text-xl"><SwapIcon /></button>
         <StationPicker label="To station" value={toText} selected={toStation}
           onChange={(value) => { setToText(value); setToStation(null); setSearched(false) }}
           onSelect={(station) => { setToStation(station); setToText(`${station.name} (${station.code})`); setSearched(false) }}
@@ -142,7 +143,7 @@ export default function TrainRouteSearch() {
         <div className="mt-6">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="font-bold text-[var(--c-text-main)]">{total} train{total === 1 ? '' : 's'} found</h3>
-            <span className="text-xs text-[var(--c-text-muted)]">{fromStation?.code} → {toStation?.code}</span>
+            <span className="text-xs text-[var(--c-text-muted)]">{fromStation?.code} <ArrowRightIcon className="inline mx-1" /> {toStation?.code}</span>
           </div>
           {results.length === 0 ? (
             <div className="rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] p-5 text-sm text-[var(--c-text-muted)]">
@@ -156,7 +157,7 @@ export default function TrainRouteSearch() {
                     <div>
                       <div className="text-xs font-mono font-bold text-amber-500">{train.trainNumber} · {train.type || 'TRAIN'}</div>
                       <h4 className="mt-1 font-extrabold text-[var(--c-text-main)]">{train.trainName}</h4>
-                      <p className="mt-1 text-xs text-[var(--c-text-muted)]">{train.source?.name || 'Origin'} → {train.destination?.name || 'Destination'}</p>
+                      <p className="mt-1 text-xs text-[var(--c-text-muted)]">{train.source?.name || 'Origin'} <ArrowRightIcon className="inline mx-1" /> {train.destination?.name || 'Destination'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 sm:min-w-[280px]">
                       <div>
