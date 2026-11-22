@@ -117,134 +117,75 @@ function PnrTab({ t, lang, onAskAI }) {
 }
 
 /* ───────────── Food ───────────── */
-function OrderCard({ t, order, now }) {
-  const idx = stageIndex(order, now)
-  return (
-    <div className={`${card} border-amber-500/40 overflow-hidden`}>
-      <div className="px-4 py-2.5 bg-amber-400/10 border-b border-amber-500/30 flex items-center gap-2 text-xs text-amber-500">
-        <WarningIcon className="text-base" /> <strong className="font-mono tracking-wider">{t('demo.banner')}</strong> {t('demo.notice')}
-      </div>
-      <div className="p-4 space-y-3 text-xs">
-        <div className="flex flex-wrap justify-between gap-2">
-          <span className="font-mono font-bold text-amber-500">{order.orderId}</span>
-          <span className="text-[var(--c-text-muted)]">{order.trainNumber} {order.trainName} · {order.stationName}{order.scheduledArrival ? ` · ${order.scheduledArrival}` : ''}</span>
-        </div>
-        <ol className="space-y-1.5">
-          {order.stages.map((s, i) => (
-            <li key={s} className={`flex items-center gap-2 ${i <= idx ? 'text-[var(--c-text-main)]' : 'text-[var(--c-text-dim)]'}`}>
-              {i < idx ? <span className="text-emerald-400"><CheckIcon /></span> : i === idx ? <span className="text-amber-500"><ClockIcon /></span> : <Dot className="bg-slate-600" />}
-              {s}
-            </li>
-          ))}
-        </ol>
-        <div className="text-[var(--c-text-muted)]">
-          {order.items.map((i) => `${i.qty} × ${i.name}`).join(', ')} · <strong className="text-[var(--c-text-main)]">₹ {order.total}</strong>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function FoodTab({ t, initial }) {
-  const [train, setTrain] = useState(null)
-  const { stops, error: stopsError } = useStops(train)
-  const [station, setStation] = useState('')
-  const [menu, setMenu] = useState(null)
-  const [cart, setCart] = useState({})
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [orders, setOrders] = useState(loadOrders)
-  const [now, setNow] = useState(Date.now())
-  const wanted = useRef(initial?.station || null)
-
-  useEffect(() => { saveOrders(orders) }, [orders])
-  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 5000); return () => clearInterval(id) }, [])
-  useEffect(() => {  // preselect the station chosen in chat if this train stops there
-    if (wanted.current && stops.some((s) => s.code === wanted.current)) { setStation(wanted.current); wanted.current = null }
-  }, [stops])
-  useEffect(() => {
-    setMenu(null); setCart({}); setErr('')
-    if (!station) return undefined
-    let alive = true
-    demoFoodMenu(station).then((m) => alive && setMenu(m)).catch((x) => alive && setErr(x.message))
-    return () => { alive = false }
-  }, [station])
-
-  const items = cartItems(cart)
-  const total = menu ? cartTotal(menu.items, cart) : 0
-  const change = (id, d) => setCart((c) => ({ ...c, [id]: Math.max(0, Math.min(5, (c[id] || 0) + d)) }))
-  const place = async () => {
-    setErr(''); setBusy(true)
+function FoodTab() {
+  const [pnr, setPnr] = useState('')
+  const [notice, setNotice] = useState('')
+  const validPnr = /^\\d{10}$/.test(pnr)
+  const copyPnr = async () => {
+    if (!validPnr) return
     try {
-      const order = await demoFoodOrder(train.trainNumber, station, items)
-      setOrders((o) => addOrder(o, order))
-      setCart({})
-    } catch (x) { setErr(x.message) } finally { setBusy(false) }
+      await navigator.clipboard.writeText(pnr)
+      setNotice('PNR copied. Open the official IRCTC page and paste it into the PNR field.')
+    } catch {
+      setNotice('Copy was unavailable. You can enter your PNR directly on the official IRCTC page.')
+    }
   }
 
   return (
     <div className="space-y-5">
-      <div className={`${card} p-5 space-y-4`}>
-        <div>
-          <label className={label}>{t('sv.pickTrain')}</label>
-          <TrainPicker t={t} value={train} onPick={setTrain} onClear={() => { setTrain(null); setStation('') }} />
-          {initial?.station && !train && <p className="text-xs text-[var(--c-text-muted)] mt-2">{initial.station}</p>}
+      <section className={`${card} p-5 sm:p-6 space-y-4`}>
+        <div className="space-y-1">
+          <span className="text-xs font-mono font-bold tracking-widest text-amber-500">OFFICIAL RAILWAY FOOD ORDERING</span>
+          <h2 className="text-xl sm:text-2xl font-black text-[var(--c-text-main)]">Order food for your train journey</h2>
+          <p className="text-sm text-[var(--c-text-muted)]">Enter your 10-digit PNR here to prepare it, then continue to IRCTC eCatering to see restaurants and delivery stations available for your journey.</p>
         </div>
-        {train && (
-          <div>
-            <label className={label}>{t('sv.boarding')}</label>
-            <StopSelect stops={stops} value={station} onChange={setStation} disabled={!stops.length} />
-            <ErrorNote message={stopsError} />
-          </div>
-        )}
-      </div>
-      <ErrorNote message={err} />
 
-      {menu && (
-        <div className="grid lg:grid-cols-[1fr_20rem] gap-5">
-          <div className={`${card} p-5 space-y-3`}>
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="font-bold text-[var(--c-text-main)]">{t('sv.menu')} · {menu.vendor.name}</h3>
-              <span className="text-xs font-mono text-amber-500">{menu.vendor.ratingDemo} / 5 ({t('demo.banner')})</span>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-2">
-              {menu.items.map((m) => (
-                <div key={m.id} className="px-3 py-2.5 rounded-xl bg-[var(--c-obsidian)] border border-[var(--c-slate-border)] flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-[var(--c-text-main)]"><Dot className={m.veg ? 'bg-emerald-500' : 'bg-red-500'} /> {m.name}</div>
-                    <div className="text-xs text-[var(--c-text-muted)] mt-0.5">{m.category} · ₹ {m.price} · {m.veg ? t('sv.veg') : t('sv.nonveg')}</div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" aria-label="Less" className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-[var(--c-slate-border)] hover:border-amber-500/50 disabled:opacity-40" disabled={!cart[m.id]} onClick={() => change(m.id, -1)}><MinusIcon /></button>
-                    <span className="w-5 text-center text-sm font-mono">{cart[m.id] || 0}</span>
-                    <button type="button" aria-label="More" className="w-8 h-8 inline-flex items-center justify-center rounded-lg border border-[var(--c-slate-border)] hover:border-amber-500/50 disabled:opacity-40" disabled={(cart[m.id] || 0) >= 5 || items.length >= 10 && !cart[m.id]} onClick={() => change(m.id, 1)}><PlusIcon /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
+        <div className="space-y-2">
+          <label className={label} htmlFor="food-pnr">10-digit PNR number</label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              id="food-pnr"
+              value={pnr}
+              onChange={(e) => { setPnr(e.target.value.replace(/\\D/g, '').slice(0, 10)); setNotice('') }}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={10}
+              placeholder="Enter your PNR"
+              className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
+            />
+            <button type="button" className={primary} disabled={!validPnr} onClick={copyPnr}>Copy PNR</button>
+            <a
+              href="https://ecatering.irctc.co.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${primary} inline-flex items-center justify-center text-center`}
+            >
+              Open official IRCTC eCatering ↗
+            </a>
           </div>
-          <div className={`${card} p-5 space-y-3 h-fit`}>
-            <h3 className="font-bold text-[var(--c-text-main)]">{t('sv.cart')}</h3>
-            {items.length === 0 ? <p className="text-sm text-[var(--c-text-muted)]">{t('sv.empty')}</p> : (
-              <ul className="space-y-1.5 text-sm">
-                {items.map((i) => { const m = menu.items.find((x) => x.id === i.id); return (
-                  <li key={i.id} className="flex justify-between gap-2"><span>{i.qty} × {m.name}</span><span className="font-mono">₹ {i.qty * m.price}</span></li>
-                ) })}
-              </ul>
-            )}
-            <div className="flex justify-between font-bold text-[var(--c-text-main)] border-t border-[var(--c-slate-border)] pt-2"><span>{t('sv.total')}</span><span className="font-mono">₹ {total}</span></div>
-            <button type="button" className={`${primary} w-full`} disabled={busy || items.length === 0} onClick={place}>{busy ? t('sv.loading') : t('sv.place')}</button>
-            <p className="text-xs text-[var(--c-text-muted)]">{menu.howItWorks}</p>
-          </div>
+          {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to copy your PNR.</p>}
+          {notice && <p role="status" className="text-sm text-emerald-400">{notice}</p>}
         </div>
-      )}
+        <p className="text-xs text-[var(--c-text-muted)]">Privacy: RailSaathi does not submit or save this PNR. Copy it and paste it yourself on the official IRCTC website.</p>
+      </section>
 
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-[var(--c-text-main)]">{t('sv.history')}</h3>
-          {orders.length > 0 && <button type="button" className="text-xs font-bold text-blue-400" onClick={() => setOrders([])}>{t('sv.clear')}</button>}
+      <section className={`${card} p-5 sm:p-6 space-y-4`}>
+        <h3 className="font-bold text-lg text-[var(--c-text-main)]">How to order food</h3>
+        <ol className="space-y-3 text-sm text-[var(--c-text-muted)] list-decimal pl-5">
+          <li>Open the official IRCTC eCatering website using the button above, or use the official <strong className="text-[var(--c-text-main)]">Food on Track</strong> app.</li>
+          <li>Enter your 10-digit PNR on the official service. It will show food options for eligible stations on your journey.</li>
+          <li>Choose a delivery station, then browse the restaurants and food options available there.</li>
+          <li>Select your food, check the order details and delivery station carefully, then choose an available payment option.</li>
+          <li>Keep the order confirmation and delivery details handy. Be at your allotted seat or berth when the train reaches the selected station.</li>
+        </ol>
+        <div className="flex flex-wrap gap-3">
+          <a href="https://ecatering.irctc.co.in/" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Official IRCTC eCatering website ↗</a>
+          <a href="https://ecatering.irctc.co.in/pages/app-for-ordering-food-in-train" target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-amber-500 hover:underline">Food on Track app information ↗</a>
         </div>
-        {orders.length === 0 ? <p className="text-sm text-[var(--c-text-muted)]">{t('sv.noHistory')}</p> : orders.map((o) => <OrderCard key={o.orderId} t={t} order={o} now={now} />)}
+      </section>
+
+      <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm text-[var(--c-text-muted)]">
+        <strong className="text-amber-500">Stay safe:</strong> IRCTC advises passengers to order through its official eCatering website, Food on Track app, or partners listed within its official service. Avoid unfamiliar food-ordering links and never share OTPs or payment details with anyone claiming to be a delivery agent.
       </div>
     </div>
   )
