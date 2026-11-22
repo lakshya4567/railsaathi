@@ -338,3 +338,21 @@ main .leaflet-control-attribution {font-size:11px;}
 [data-theme="light"] main textarea::placeholder {
   color: #718076 !important;
 }
+
+
+/* Slightly shift the complete desktop header row to the left. */
+@media (min-width: 821px) {
+  .header-inner {
+    padding-left: calc(5.2% - 12px);
+    padding-right: calc(5.2% + 12px);
+  }
+  .all-features-trigger {
+    transform: translateX(-4px);
+  }
+}
+@media (min-width: 821px) and (max-width: 1100px) {
+  .header-inner {
+    padding-left: calc(3.5% - 8px);
+    padding-right: calc(3.5% + 8px);
+  }
+}
