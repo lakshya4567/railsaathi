@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import NationalMap from './NationalMap'
 import {
-  MapIcon, CalendarIcon, ShareIcon, WarningIcon, CheckIcon, SwapIcon, TicketIcon, Dot,
+  MapIcon, CalendarIcon, ShareIcon, WarningIcon, CheckIcon, SwapIcon, TicketIcon, Dot, ArrowRightIcon,
 } from './Icons'
 import { buildIcs, downloadFile, tomorrowIso } from '../utils/ics'
 import { journeyText, shareOrCopy } from '../utils/share'
@@ -99,7 +99,7 @@ function TrainRow({ t, tr, onSelectTrain, extra }) {
         ) : null}
         {extra}
       </div>
-      <span className="text-xs font-bold text-blue-400 whitespace-nowrap">{t('b.timetable')} →</span>
+      <span className="text-xs font-bold text-blue-400 whitespace-nowrap">{t('b.timetable')} <ArrowRightIcon className="ml-1 inline" /></span>
     </button>
   )
 }
@@ -153,7 +153,7 @@ function TrainCard({ t, block, onSelectTrain, onAsk }) {
         </div>
         <RunningDays days={tr.runningDays} />
         <div className="flex gap-2 flex-wrap">
-          <button type="button" className={btn} onClick={() => onSelectTrain(tr.trainNumber)}>{t('b.timetable')} →</button>
+          <button type="button" className={btn} onClick={() => onSelectTrain(tr.trainNumber)}>{t('b.timetable')} <ArrowRightIcon className="ml-1 inline" /></button>
           <button type="button" className={btn} onClick={() => onAsk(`Show the route of train ${tr.trainNumber} on the map`)}><MapIcon /> {t('b.showRoute')}</button>
         </div>
       </div>
@@ -198,7 +198,7 @@ function StationCard({ t, block, onSelectStation }) {
         </div>
         {s.address ? <Fact label="Address" value={s.address} /> : null}
         <div className="flex gap-2 flex-wrap">
-          <button type="button" className={btn} onClick={() => onSelectStation(s.code)}>{t('b.trainsHere')} →</button>
+          <button type="button" className={btn} onClick={() => onSelectStation(s.code)}>{t('b.trainsHere')} <ArrowRightIcon className="ml-1 inline" /></button>
           {overlay ? (
             <button type="button" className={btn} onClick={() => setShowMap((v) => !v)}>
               <MapIcon /> {showMap ? t('b.hideMap') : t('b.onMap')}
@@ -231,7 +231,7 @@ function StationList({ t, block, onSelectStation }) {
                 {s.state || '—'}{s.zone ? ` · ${s.zone}` : ''}{s.trainCount != null ? ` · ${s.trainCount}` : ''}
               </p>
             </div>
-            <span className="text-xs font-bold text-blue-400 whitespace-nowrap">{t('b.trainsHere')} →</span>
+            <span className="text-xs font-bold text-blue-400 whitespace-nowrap">{t('b.trainsHere')} <ArrowRightIcon className="ml-1 inline" /></span>
           </button>
         ))}
       </div>
@@ -245,7 +245,7 @@ function TrainRoute({ t, block, onViewMap }) {
   const showHalt = block.stops.some((s) => s.haltMinutes !== null && s.haltMinutes !== undefined)
   return (
     <div className={card}>
-      <Header right={<button type="button" className={btn} onClick={() => onViewMap(tr.trainNumber)}>{t('b.openMap')} →</button>}>
+      <Header right={<button type="button" className={btn} onClick={() => onViewMap(tr.trainNumber)}>{t('b.openMap')} <ArrowRightIcon className="ml-1 inline" /></button>}>
         {t('b.showRoute').split(' ')[0]} · <span className={mono}>{tr.trainNumber}</span> <span className="ml-1">{tr.trainName}</span>
       </Header>
       <div className="overflow-auto max-h-80">
@@ -759,7 +759,7 @@ function DemoFoodMenu({ t, block, onOpenServices }) {
         ))}
       </div>
       {onOpenServices ? (
-        <button type="button" className={btn} onClick={() => onOpenServices('food', { station: block.station.code })}>{t('sv.food')} →</button>
+        <button type="button" className={btn} onClick={() => onOpenServices('food', { station: block.station.code })}>{t('sv.food')} <ArrowRightIcon className="ml-1 inline" /></button>
       ) : null}
     </DemoCard>
   )
