@@ -1,5 +1,5 @@
 import React from 'react'
-import { SparkIcon, TrainIcon, StationIcon, MapIcon, WaveIcon, CrosshairIcon, ZigzagIcon } from './Icons'
+import { SparkIcon, TrainIcon, StationIcon, MapIcon, WaveIcon, CrosshairIcon, ZigzagIcon, ArrowRightIcon } from './Icons'
 import TrainRouteSearch from './TrainRouteSearch'
 
 export default function Home({ setActiveTab, onSelectTrain, onSelectStation, onAskAI }) {
@@ -27,13 +27,13 @@ export default function Home({ setActiveTab, onSelectTrain, onSelectStation, onA
       <section className="explore-section">
         <div className="section-heading"><div><span className="mini-eyebrow">THE RAILSAATHI EXPERIENCE</span><h2>Everything for the journey.</h2></div><span className="section-aside">BUILT AROUND THE WAY INDIA TRAVELS</span></div>
         <div className="feature-grid">
-          <button className="feature-card feature-trains" onClick={() => setActiveTab('trains')}><span className="feature-index">01 / EXPLORE</span><span className="feature-icon"><TrainIcon /></span><h3>Find your train.</h3><p>Browse train services, discover routes and explore complete stop-by-stop timetables.</p><span className="feature-link">Explore trains <b>→</b></span><span className="feature-decoration rail-decoration"><WaveIcon strokeWidth={0.8} /></span></button>
-          <button className="feature-card feature-stations" onClick={() => setActiveTab('stations')}><span className="feature-index">02 / DISCOVER</span><span className="feature-icon"><StationIcon /></span><h3>Know your station.</h3><p>Look up railway stations, codes, locations and the trains that connect there.</p><span className="feature-link">Browse stations <b>→</b></span><span className="feature-decoration station-decoration"><CrosshairIcon strokeWidth={0.8} /></span></button>
-          <button className="feature-card feature-map" onClick={() => setActiveTab('map')}><span className="feature-index">03 / VISUALISE</span><span className="feature-icon"><MapIcon /></span><h3>See the network.</h3><p>Follow routes across the country and see how railway journeys fit together.</p><span className="feature-link">Open route map <b>→</b></span><span className="feature-decoration map-decoration"><ZigzagIcon strokeWidth={0.8} /></span></button>
+          <button className="feature-card feature-trains" onClick={() => setActiveTab('trains')}><span className="feature-index">01 / EXPLORE</span><span className="feature-icon"><TrainIcon /></span><h3>Find your train.</h3><p>Browse train services, discover routes and explore complete stop-by-stop timetables.</p><span className="feature-link">Explore trains <ArrowRightIcon className="ml-1" /></span><span className="feature-decoration rail-decoration"><WaveIcon strokeWidth={0.8} /></span></button>
+          <button className="feature-card feature-stations" onClick={() => setActiveTab('stations')}><span className="feature-index">02 / DISCOVER</span><span className="feature-icon"><StationIcon /></span><h3>Know your station.</h3><p>Look up railway stations, codes, locations and the trains that connect there.</p><span className="feature-link">Browse stations <ArrowRightIcon className="ml-1" /></span><span className="feature-decoration station-decoration"><CrosshairIcon strokeWidth={0.8} /></span></button>
+          <button className="feature-card feature-map" onClick={() => setActiveTab('map')}><span className="feature-index">03 / VISUALISE</span><span className="feature-icon"><MapIcon /></span><h3>See the network.</h3><p>Follow routes across the country and see how railway journeys fit together.</p><span className="feature-link">Open route map <ArrowRightIcon className="ml-1" /></span><span className="feature-decoration map-decoration"><ZigzagIcon strokeWidth={0.8} /></span></button>
         </div>
       </section>
 
-      <section className="assistant-banner"><div className="assistant-orb"><SparkIcon /></div><div className="assistant-banner-copy"><span className="mini-eyebrow">A LITTLE HELP ALONG THE WAY</span><h2>Questions about your journey?</h2><p>Meet your RailSaathi journey assistant. Ask about trains, routes and stations in simple language.</p></div><button onClick={() => setActiveTab('assistant')}>Meet your assistant <span>→</span></button></section>
+      <section className="assistant-banner"><div className="assistant-orb"><SparkIcon /></div><div className="assistant-banner-copy"><span className="mini-eyebrow">A LITTLE HELP ALONG THE WAY</span><h2>Questions about your journey?</h2><p>Meet your RailSaathi journey assistant. Ask about trains, routes and stations in simple language.</p></div><button onClick={() => setActiveTab('assistant')}>Meet your assistant <ArrowRightIcon /></button></section>
       <div className="home-bottom-note"><span>RAILSAATHI</span><span>MADE FOR THE MANY WAYS INDIA MOVES.</span></div>
     </div>
   )
