@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101827" />
+  <meta name="description" content="RailSaathi documentation — guides for train routes, PNR status, maps and journey planning." />
+  <title>RailSaathi Docs</title>
+  <link rel="icon" href="../favicon.ico" />
+  <link rel="stylesheet" href="./assets/docs.css" />
+</head>
+<body>
+  <div class="docs-shell">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="RailSaathi documentation home">
+        <span class="brand-mark">R</span><span>RailSaathi</span><span class="brand-divider">/</span><span class="brand-muted">Docs</span>
+      </a>
+      <div class="topbar-actions">
+        <label class="search-wrap"><span class="search-icon">⌕</span><input id="docs-search" type="search" placeholder="Search documentation..." autocomplete="off" /><kbd>⌘ K</kbd></label>
+        <button class="icon-button" id="theme-toggle" aria-label="Toggle color theme" title="Toggle theme">◐</button>
+        <a class="top-link" href="/">Back to RailSaathi <span>↗</span></a>
+        <button class="icon-button menu-toggle" id="menu-toggle" aria-label="Open navigation">☰</button>
+      </div>
+    </header>
+    <div class="docs-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-label">GUIDE</div>
+        <a class="side-link" href="#home" data-page="home">Introduction</a>
+        <a class="side-link" href="#getting-started" data-page="getting-started">Getting started</a>
+        <div class="sidebar-label">USING RAILSAATHI</div>
+        <a class="side-link" href="#find-trains" data-page="find-trains">Find trains</a>
+        <a class="side-link" href="#train-routes" data-page="train-routes">Train routes & schedules</a>
+        <a class="side-link" href="#network-map" data-page="network-map">Network map</a>
+        <a class="side-link" href="#pnr-status" data-page="pnr-status">PNR status</a>
+        <a class="side-link" href="#food-on-train" data-page="food-on-train">Food on train</a>
+        <a class="side-link" href="#live-tracking" data-page="live-tracking">Live tracking</a>
+        <div class="sidebar-label">REFERENCE</div>
+        <a class="side-link" href="#data-and-accuracy" data-page="data-and-accuracy">Data & accuracy</a>
+        <a class="side-link" href="#troubleshooting" data-page="troubleshooting">Troubleshooting</a>
+        <div class="sidebar-footer"><span class="status-dot"></span> Documentation for RailSaathi</div>
+      </aside>
+      <main class="content-area">
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+        <article class="article" id="article" aria-live="polite"></article>
+        <footer class="page-footer"><span>RailSaathi Documentation</span><a href="https://github.com/lakshya4567/railsaathi" target="_blank" rel="noreferrer">View source on GitHub ↗</a></footer>
+      </main>
+      <aside class="right-rail" id="right-rail"><div class="right-title">ON THIS PAGE</div><nav id="toc"></nav><div class="help-card"><strong>Need a hand?</strong><p>Head back to RailSaathi to explore the journey tools.</p><a href="/">Open RailSaathi ↗</a></div></aside>
+    </div>
+    <div class="search-panel" id="search-panel" hidden><div class="search-panel-head">SEARCH DOCUMENTATION <button id="close-search" aria-label="Close search">Esc</button></div><div id="search-results"></div></div>
+  </div>
+  <script src="./assets/docs.js"></script>
+</body>
+</html>
