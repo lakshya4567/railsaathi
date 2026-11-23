@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     # --- AI journey assistant (all optional: the rest of the API works without them) ---
     ai_provider: str = Field("gemini", alias="AI_PROVIDER")
     gemini_api_key: str = Field("", alias="GEMINI_API_KEY")
+    # Used only by the PNR status endpoint; never exposed to the frontend.
+    irctc_dev_api_key: str = Field("", alias="IRCTC_DEV_API_KEY")
     gemini_model: str = Field("gemini-3.5-flash-lite", alias="GEMINI_MODEL")
     ai_timeout_seconds: float = Field(30.0, alias="AI_TIMEOUT_SECONDS")
     assistant_rate_limit_per_min: int = Field(20, alias="ASSISTANT_RATE_LIMIT_PER_MIN")
