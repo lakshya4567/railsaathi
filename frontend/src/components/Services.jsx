@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import AssistantBlocks from './AssistantBlocks'
 import {
-  searchTrains, getTrainRoute, demoFare, demoSeats, demoLive,
+  searchTrains, getTrainRoute, getPnrStatus, demoFare, demoSeats, demoLive,
 } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { tomorrowIso } from '../utils/ics'
@@ -90,39 +90,82 @@ function StopSelect({ stops, value, onChange, disabled }) {
 }
 
 /* ───────────── PNR ───────────── */
+function PnrValue({ value }) {
+  if (value === null || value === undefined || value === '') return <span className="text-[var(--c-text-muted)]">—</span>
+  if (Array.isArray(value)) {
+    return <div className="space-y-2">{value.map((item, index) => <div key={index} className="rounded-xl border border-[var(--c-slate-border)] p-3"><PnrValue value={item} /></div>)}</div>
+  }
+  if (typeof value === 'object') {
+    return (
+      <dl className="space-y-2">
+        {Object.entries(value).map(([key, item]) => (
+          <div key={key} className="grid grid-cols-1 sm:grid-cols-[minmax(120px,0.8fr)_2fr] gap-1 sm:gap-3">
+            <dt className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-muted)]">{key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ')}</dt>
+            <dd className="min-w-0 break-words text-sm text-[var(--c-text-main)]"><PnrValue value={item} /></dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
+  return <span>{String(value)}</span>
+}
+
 function PnrTab() {
+  const [pnr, setPnr] = useState('')
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const validPnr = /^\d{10}$/.test(pnr)
+
+  const checkPnr = async (event) => {
+    event.preventDefault()
+    if (!validPnr || busy) return
+    setBusy(true)
+    setError('')
+    setResult(null)
+    try {
+      setResult(await getPnrStatus(pnr))
+    } catch (err) {
+      setError(err.message || 'Could not check this PNR.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <section className={`${card} p-4 sm:p-5 space-y-3`}>
+      <section className={`${card} p-4 sm:p-5 space-y-4`}>
         <div>
-          <h2 className="text-lg font-black text-[var(--c-text-main)]">ConfirmTkt PNR Status</h2>
-          <p className="text-sm text-[var(--c-text-muted)] mt-1">
-            Check your PNR status using ConfirmTkt. Enter your 10-digit PNR in the form below.
-          </p>
+          <h2 className="text-lg font-black text-[var(--c-text-main)]">Live PNR Status</h2>
+          <p className="text-sm text-[var(--c-text-muted)] mt-1">Enter your 10-digit PNR to check the latest reservation and charting status.</p>
         </div>
-        <div className="overflow-hidden rounded-xl border border-[var(--c-slate-border)] bg-white">
-          <iframe
-            title="ConfirmTkt PNR Status"
-            src="https://www.confirmtkt.com/pnr-status"
-            className="block w-full"
-            style={{ height: 'min(760px, 78vh)', minHeight: '560px', border: 0 }}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-        <p className="text-xs text-[var(--c-text-muted)]">
-          If ConfirmTkt does not appear inside this frame, open its PNR status page directly using the link below.
-          Your PNR is entered on ConfirmTkt, a third-party railway information service, not submitted to RailSaathi.
-        </p>
-        <a
-          href="https://www.confirmtkt.com/pnr-status"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-sm font-bold text-amber-500 hover:underline"
-        >
-          Open ConfirmTkt PNR Status <ExternalLinkIcon />
-        </a>
+        <form onSubmit={checkPnr} className="space-y-3">
+          <div>
+            <label className={label} htmlFor="status-pnr">10-digit PNR number</label>
+            <input
+              id="status-pnr" value={pnr}
+              onChange={(event) => { setPnr(event.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); setResult(null) }}
+              inputMode="numeric" autoComplete="off" maxLength={10}
+              placeholder="Enter your PNR"
+              className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
+            />
+          </div>
+          <button type="submit" className={primary} disabled={!validPnr || busy}>
+            {busy ? 'Checking PNR…' : 'Check PNR Status'}
+          </button>
+        </form>
+        {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to continue.</p>}
+        <ErrorNote message={error} />
       </section>
+      {result !== null && (
+        <section className={`${card} p-4 sm:p-5 space-y-3`} aria-live="polite">
+          <h3 className="font-bold text-lg text-[var(--c-text-main)]">PNR enquiry result</h3>
+          <PnrValue value={result} />
+        </section>
+      )}
+      <p className="text-xs text-[var(--c-text-muted)]">
+        Privacy: RailSaathi sends your PNR to its backend and the PNR API provider to retrieve the result. RailSaathi does not save the PNR or response in its railway database.
+      </p>
     </div>
   )
 }
@@ -298,7 +341,7 @@ export default function Services({ lang = 'en', initial = null, onAskAI }) {
         <h1 className="text-3xl font-black">{t('sv.title')}</h1>
         <p className="text-sm text-[var(--c-text-muted)] mt-1">{t('sv.subtitle')}</p>
       </div>
-      {tab !== 'food' && (
+      {tab !== 'food' && tab !== 'pnr' && (
         <div className="p-4 rounded-2xl bg-amber-400/10 border border-amber-500/30 text-amber-500 text-sm flex items-start gap-3">
           <WarningIcon className="text-lg mt-0.5" />
           <p><strong className="font-mono tracking-wider">{t('demo.banner')}</strong> {t('sv.demoAll')}</p>
