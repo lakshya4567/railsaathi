@@ -8,3 +8,7 @@
 html,body,.docs-shell,.topbar,.sidebar,.content-area,.right-rail,.feature-card,.help-card,.search-panel{background-color:#000000!important}
 :root,:root[data-theme="light"]{--bg:#000000;--panel:#000000;--panel2:#000000;--code:#000000}
 .callout,.callout.info{background-color:#000000!important}
+/* Match the main RailSaathi brand mark */
+.brand-mark{width:36px;height:36px;border-radius:12px;background:#1e3934;color:#f3f0e7;position:relative;display:grid;place-items:center;font:700 25px Georgia,serif}
+.brand-mark .brand-r{line-height:1}
+.brand-mark i{position:absolute;width:6px;height:6px;border-radius:50%;background:#e88a62;right:6px;top:6px}
