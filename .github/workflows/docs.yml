@@ -1,0 +1,25 @@
+name: Deploy the docs to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/public/docs/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Add CNAME file to docs folder
+        run: echo "docs.railsaathi.isroot.in" > frontend/public/docs/CNAME
+
+      - name: Deploy docs folder to railsaathi-docs repo
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          external_repository: lakshya4567/railsaathi-docs
+          publish_branch: gh-pages
+          publish_dir: ./frontend/public/docs
+          personal_token: ${{ secrets.DOCS_DEPLOY_TOKEN }}
