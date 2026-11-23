@@ -10,6 +10,19 @@
 const API_ORIGIN = (import.meta.env.VITE_API_URL || '').trim().replace(/\/+$/, '');
 const API_BASE = `${API_ORIGIN}/api`;
 
+export async function getPnrStatus(pnr) {
+  const res = await fetch(`${API_BASE}/pnr/${encodeURIComponent(pnr)}`);
+  if (!res.ok) {
+    let message = 'PNR lookup failed. Please try again.'
+    try {
+      const body = await res.json()
+      if (typeof body.detail === 'string') message = body.detail
+    } catch { /* use fallback message */ }
+    throw new Error(message)
+  }
+  return res.json()
+}
+
 export async function checkHealth() {
   const res = await fetch(`${API_BASE}/health`);
   return res.json();
