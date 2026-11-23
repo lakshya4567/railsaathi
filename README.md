@@ -331,3 +331,5 @@ Option A is simpler to debug and avoids an extra hop, which matters when the fre
 - Do not commit `.env`, virtual environments, `node_modules` or cache folders.
 - The assistant has no write access to the database and cannot run arbitrary queries.
 - If a secret is ever shared or committed by mistake, rotate it (change the database password or create a new API key).
+
+- 
