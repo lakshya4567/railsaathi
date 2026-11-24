@@ -48,7 +48,11 @@ export default function JourneyAIWidget({
 
   const guideCursorTo = async (selector, fallback = 'main') => {
     if (!cursorEnabled) return
-    const target = document.querySelector(selector) || document.querySelector(fallback)
+    const candidates = [...document.querySelectorAll(selector)]
+    const target = candidates.find((element) => {
+      const bounds = element.getBoundingClientRect()
+      return bounds.width > 0 && bounds.height > 0
+    }) || document.querySelector(fallback)
     if (!target) return
     const rect = target.getBoundingClientRect()
     setCursorVisible(true)
