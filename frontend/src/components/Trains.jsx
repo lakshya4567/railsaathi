@@ -35,6 +35,18 @@ export default function Trains({ onSelectTrain }) {
     fetchTrainsList(page, searchQuery)
   }, [page])
 
+  useEffect(() => {
+    const handleAssistantAction = (event) => {
+      const action = event.detail
+      if (action?.type !== 'train-search') return
+      setSearchQuery(action.query)
+      setPage(1)
+      fetchTrainsList(1, action.query)
+    }
+    window.addEventListener('railsaathi:assistant-action', handleAssistantAction)
+    return () => window.removeEventListener('railsaathi:assistant-action', handleAssistantAction)
+  }, [])
+
   const handleSearchSubmit = (e) => {
     e.preventDefault()
     setPage(1)
