@@ -9,6 +9,9 @@ const PAGE_ALIASES = [
   { words: ['network map', 'national map', 'map page'], tab: 'map', label: 'Network Map' },
   { words: ['journey ai page', 'full journey ai'], tab: 'assistant', label: 'Journey AI' },
   { words: ['live tracking', 'train tracking'], tab: 'live-tracking', label: 'Live Tracking' },
+  { words: ['pnr finder', 'pnr status'], service: 'pnr', label: 'PNR Finder' },
+  { words: ['food on train', 'food ordering'], service: 'food', label: 'Food on Train' },
+  { words: ['fare finder', 'seat availability'], service: 'fare', label: 'Fare & Seat Finder' },
 ]
 
 function navigationIntent(raw) {
@@ -56,7 +59,8 @@ export default function JourneyAIWidget({
       setSteps([{ text: `Opening ${nav.label}`, state: 'active' }])
       await new Promise((resolve) => setTimeout(resolve, 250))
       if (requestId.current !== id) return
-      onNavigate(nav.tab)
+      if (nav.service) onOpenServices(nav.service)
+      else onNavigate(nav.tab)
       setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
       setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
       setBusy(false)
