@@ -154,12 +154,12 @@ function PnrValue({ value }) {
 
 function PnrTab({ initialPnr = '' }) {
   const [pnr, setPnr] = useState(initialPnr)
-  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\\D/g, '').slice(0, 10)) }, [initialPnr])
+  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\D/g, '').slice(0, 10)) }, [initialPnr])
   const [result, setResult] = useState(null)
   const [isDemo, setIsDemo] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const validPnr = /^\\d{10}$/.test(pnr)
+  const validPnr = /^\d{10}$/.test(pnr)
 
   const checkPnr = async (event) => {
     event.preventDefault()
@@ -204,7 +204,7 @@ function PnrTab({ initialPnr = '' }) {
             <label className={label} htmlFor="status-pnr">10-digit PNR number</label>
             <input
               id="status-pnr" value={pnr}
-              onChange={(event) => { setPnr(event.target.value.replace(/\\D/g, '').slice(0, 10)); setError(''); setResult(null); setIsDemo(false) }}
+              onChange={(event) => { setPnr(event.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); setResult(null); setIsDemo(false) }}
               inputMode="numeric" autoComplete="off" maxLength={10}
               placeholder="Enter your PNR"
               className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
