@@ -112,7 +112,7 @@ function PnrValue({ value }) {
 
 function PnrTab({ initialPnr = '' }) {
   const [pnr, setPnr] = useState(initialPnr)
-  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\\D/g, '').slice(0, 10)) }, [initialPnr])
+  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\D/g, '').slice(0, 10)) }, [initialPnr])
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
