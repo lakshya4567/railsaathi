@@ -52,6 +52,11 @@ export default function JourneyAIWidget({
     const id = ++requestId.current
     const nav = navigationIntent(question)
     const routeSearch = question.match(/(?:find|show|search)\s+(?:me\s+)?trains?\s+from\s+(.+?)\s+to\s+(.+?)(?:[?.!]|$)/i)
+    // Handle a train number in the same request as a page-navigation command.
+    // Keep the number as text so leading zeroes (for example, 01208) are preserved.
+    const mapTrainMatch = nav?.tab === 'map'
+      ? question.match(/\b(?:train\s*)?(\d{5})\s*(?:train)?\b/i)
+      : null
     setMessages((current) => [...current, { role: 'user', text: question }])
     setBusy(true)
     setSteps([])
@@ -61,9 +66,23 @@ export default function JourneyAIWidget({
       await new Promise((resolve) => setTimeout(resolve, 250))
       if (requestId.current !== id) return
       if (nav.service) onOpenServices(nav.service)
+      else if (nav.tab === 'map' && mapTrainMatch) onViewMap(mapTrainMatch[1])
       else onNavigate(nav.tab)
-      setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
-      setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
+
+      if (nav.tab === 'map' && mapTrainMatch) {
+        setSteps([
+          { text: 'Opened Network Map', state: 'done' },
+          { text: `Searching the map for train ${mapTrainMatch[1]}`, state: 'done' },
+        ])
+        setMessages((current) => [...current, {
+          role: 'assistant',
+          text: `I've opened Network Map and loaded the route search for train ${mapTrainMatch[1]}.`,
+          blocks: [],
+        }])
+      } else {
+        setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
+        setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
+      }
       setBusy(false)
       return
     }
