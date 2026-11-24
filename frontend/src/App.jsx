@@ -100,6 +100,9 @@ export default function App() {
         activeTab={activeTab}
         onNavigate={setActiveTab}
         onOpenServices={handleOpenServices}
+        onSelectTrain={setSelectedTrainNumber}
+        onSelectStation={setSelectedStationCode}
+        onViewMap={handleViewMap}
         lang={lang}
       />
 
