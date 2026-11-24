@@ -84,7 +84,7 @@ export default function TrainRouteSearch() {
       const resolveStation = async (query) => {
         const data = await searchStations(query, 1, 8)
         const hits = data.results || []
-        const normalized = query.toLowerCase().replace(/\\s+/g, ' ').trim()
+        const normalized = query.toLowerCase().replace(/\s+/g, ' ').trim()
         return hits.find((station) => station.code?.toLowerCase() === normalized || station.name?.toLowerCase() === normalized)
           || hits[0]
           || null
