@@ -180,7 +180,7 @@ export default function JourneyAIWidget({
                 <span>AI cursor</span>
                 <span className={`relative h-4 w-7 rounded-full transition ${cursorEnabled ? 'bg-emerald-600' : 'bg-slate-500'}`}><span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${cursorEnabled ? 'left-3.5' : 'left-0.5'}`} /></span>
               </button>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]" aria-label="Close Journey AI">✕</button>
+              <button type="button" onClick={() => { setOpen(false); setCursorVisible(false) }} className="rounded-lg px-2 py-1 text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]" aria-label="Close Journey AI">✕</button>
             </div>
           </header>
 
