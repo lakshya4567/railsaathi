@@ -54,12 +54,18 @@ export default function JourneyAIWidget({
       return bounds.width > 0 && bounds.height > 0
     }) || document.querySelector(fallback) || document.body
     const rect = target.getBoundingClientRect()
-    const x = Math.max(12, Math.min(window.innerWidth - 42, rect.left + Math.min(rect.width / 2, 90)))
-    const y = Math.max(12, Math.min(window.innerHeight - 48, rect.top + Math.min(rect.height / 2, 35)))
-    setCursorPosition({ x: Math.round(x), y: Math.round(y) })
+    const x = Math.max(18, Math.min(window.innerWidth - 48, rect.left + Math.min(rect.width / 2, 90)))
+    const y = Math.max(18, Math.min(window.innerHeight - 54, rect.top + Math.min(rect.height / 2, 35)))
+    // Begin at the centre so the visual guide clearly travels to its destination.
+    setCursorPulse(false)
+    setCursorPosition({ x: Math.round(window.innerWidth / 2), y: Math.round(window.innerHeight / 2) })
     setCursorVisible(true)
+    await wait(180)
+    setCursorPosition({ x: Math.round(x), y: Math.round(y) })
+    await wait(1150)
+    // This is a visual click animation only; it does not activate the target.
     setCursorPulse(true)
-    await wait(650)
+    await wait(260)
     setCursorPulse(false)
   }
 
@@ -272,12 +278,13 @@ export default function JourneyAIWidget({
       )}
       {cursorEnabled && cursorVisible && (
         <div aria-hidden="true" className={`pointer-events-none fixed z-[99999] transition-all duration-500 ease-in-out ${cursorPulse ? 'scale-110' : 'scale-100'}`} style={{ left: cursorPosition.x, top: cursorPosition.y, transform: 'translate(-2px, -2px)' }}>
-          <svg viewBox="0 0 34 42" width="34" height="42" className="drop-shadow-[0_3px_5px_rgba(0,0,0,.45)]">
-            <path d="M3 2.5 29 23l-11.5 1.2-6 11.3L3 2.5Z" fill="#f3f0e7" stroke="#1e3934" strokeWidth="2.4" strokeLinejoin="round"/>
-            <path d="m18 25 6 11" stroke="#e88a62" strokeWidth="3" strokeLinecap="round"/>
-            <circle cx="4" cy="4" r="2" fill="#e88a62"/>
+          <span className={`absolute -left-3 -top-3 h-10 w-10 rounded-full border-2 border-[#e88a62]/80 transition-all duration-300 ${cursorPulse ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
+          <svg viewBox="0 0 36 44" width="36" height="44" className="relative drop-shadow-[0_5px_10px_rgba(0,0,0,.38)]">
+            <path d="M4 3 31 24 19 25.5 13 39 4 3Z" fill="#f7f4ec" stroke="#173b32" strokeWidth="2.2" strokeLinejoin="round"/>
+            <path d="m19 26 6 10" stroke="#e88a62" strokeWidth="3.2" strokeLinecap="round"/>
+            <path d="M8 8 26 22" stroke="#ffffff" strokeOpacity=".85" strokeWidth="1.4" strokeLinecap="round"/>
           </svg>
-          {cursorPulse && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#1e3934] bg-[#e88a62]" />}
+          {cursorPulse && <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-[#e88a62] shadow-[0_0_0_4px_rgba(232,138,98,.2)]" />}
         </div>
       )}
       <button type="button" onClick={() => setOpen((value) => !value)} className="ml-auto flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500 px-4 py-3 font-black text-slate-950 shadow-xl hover:bg-amber-400" aria-expanded={open}>
