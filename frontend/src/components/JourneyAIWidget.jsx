@@ -170,7 +170,14 @@ export default function JourneyAIWidget({
               <div className="font-black text-[var(--c-text-main)]">Journey AI</div>
               <div className="text-[11px] text-[var(--c-text-muted)]">Railway database · Website controls · {activeTab.replace('-', ' ')}</div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]" aria-label="Close Journey AI">✕</button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={toggleCursor} aria-pressed={cursorEnabled} title={cursorEnabled ? 'Turn off visual AI cursor' : 'Turn on visual AI cursor'} className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs transition ${cursorEnabled ? 'border-emerald-500/50 bg-emerald-500/10 text-[var(--c-emerald)]' : 'border-[var(--c-slate-border)] text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]'}`}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 3.5 18.5 14l-6.1.8-3.2 5.7L5 3.5Z" strokeLinejoin="round"/><path d="m13 15 3.2 5" strokeLinecap="round"/></svg>
+                <span>AI cursor</span>
+                <span className={`relative h-4 w-7 rounded-full transition ${cursorEnabled ? 'bg-emerald-600' : 'bg-slate-500'}`}><span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${cursorEnabled ? 'left-3.5' : 'left-0.5'}`} /></span>
+              </button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]" aria-label="Close Journey AI">✕</button>
+            </div>
           </header>
 
           <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3" aria-live="polite">
