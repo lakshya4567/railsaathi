@@ -90,21 +90,63 @@ function StopSelect({ stops, value, onChange, disabled }) {
 }
 
 /* ───────────── PNR ───────────── */
+const DEMO_PNR = '0000000000'
+const DEMO_PNR_RESULT = {
+  success: true,
+  data: {
+    pnr: DEMO_PNR,
+    trainNumber: '12860',
+    trainName: 'Gitanjali Express (DEMO)',
+    from: { code: 'HWH', name: 'Howrah Jn', time: '06:00 AM' },
+    to: { code: 'CSMT', name: 'Mumbai CSMT', time: '08:20 AM' },
+    journeyDate: '15 Dec 2026',
+    class: '3A',
+    quota: 'GN',
+    chartStatus: 'Prepared (DEMO)',
+    passengers: [
+      { number: 1, bookingStatus: 'CNF', currentStatus: 'CNF', coach: 'B2', seat: '31', berth: 'LOWER' },
+      { number: 2, bookingStatus: 'RAC 12', currentStatus: 'CNF', coach: 'B2', seat: '32', berth: 'MIDDLE' },
+    ],
+  },
+  source: 'RailSaathi built-in demo',
+  updatedAt: 'Demo data — not a live enquiry',
+}
+
 function PnrValue({ value }) {
   if (value === null || value === undefined || value === '') return <span className="text-[var(--c-text-muted)]">—</span>
   if (Array.isArray(value)) {
-    return <div className="space-y-2">{value.map((item, index) => <div key={index} className="rounded-xl border border-[var(--c-slate-border)] p-3"><PnrValue value={item} /></div>)}</div>
+    if (!value.length) return <span className="text-[var(--c-text-muted)]">—</span>
+    return (
+      <div className="overflow-x-auto rounded-xl border border-[var(--c-slate-border)]">
+        <table className="w-full min-w-[520px] text-sm text-left">
+          <tbody>
+            {value.map((item, index) => (
+              <tr key={index} className="border-b border-[var(--c-slate-border)] last:border-0">
+                <td className="w-14 px-3 py-3 align-top text-xs font-bold text-[var(--c-text-muted)]">#{index + 1}</td>
+                <td className="px-3 py-3"><PnrValue value={item} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
   }
   if (typeof value === 'object') {
     return (
-      <dl className="space-y-2">
-        {Object.entries(value).map(([key, item]) => (
-          <div key={key} className="grid grid-cols-1 sm:grid-cols-[minmax(120px,0.8fr)_2fr] gap-1 sm:gap-3">
-            <dt className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-muted)]">{key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ')}</dt>
-            <dd className="min-w-0 break-words text-sm text-[var(--c-text-main)]"><PnrValue value={item} /></dd>
-          </div>
-        ))}
-      </dl>
+      <div className="overflow-x-auto rounded-xl border border-[var(--c-slate-border)]">
+        <table className="w-full text-sm text-left">
+          <tbody>
+            {Object.entries(value).map(([key, item]) => (
+              <tr key={key} className="border-b border-[var(--c-slate-border)] last:border-0">
+                <th scope="row" className="w-[38%] min-w-32 bg-[var(--c-obsidian)]/40 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide text-[var(--c-text-muted)]">
+                  {key.replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' ')}
+                </th>
+                <td className="min-w-0 break-words px-3 py-2.5 text-[var(--c-text-main)]"><PnrValue value={item} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     )
   }
   return <span>{String(value)}</span>
@@ -112,11 +154,12 @@ function PnrValue({ value }) {
 
 function PnrTab({ initialPnr = '' }) {
   const [pnr, setPnr] = useState(initialPnr)
-  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\D/g, '').slice(0, 10)) }, [initialPnr])
+  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\\D/g, '').slice(0, 10)) }, [initialPnr])
   const [result, setResult] = useState(null)
+  const [isDemo, setIsDemo] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const validPnr = /^\d{10}$/.test(pnr)
+  const validPnr = /^\\d{10}$/.test(pnr)
 
   const checkPnr = async (event) => {
     event.preventDefault()
@@ -124,8 +167,14 @@ function PnrTab({ initialPnr = '' }) {
     setBusy(true)
     setError('')
     setResult(null)
+    setIsDemo(false)
     try {
-      setResult(await getPnrStatus(pnr))
+      if (pnr === DEMO_PNR) {
+        setResult(DEMO_PNR_RESULT)
+        setIsDemo(true)
+      } else {
+        setResult(await getPnrStatus(pnr))
+      }
     } catch (err) {
       setError(err.message || 'Could not check this PNR.')
     } finally {
@@ -133,39 +182,64 @@ function PnrTab({ initialPnr = '' }) {
     }
   }
 
+  const useDemoPnr = () => {
+    setPnr(DEMO_PNR)
+    setResult(null)
+    setIsDemo(false)
+    setError('')
+  }
+
   return (
     <div className="space-y-4">
       <section className={`${card} p-4 sm:p-5 space-y-4`}>
         <div>
-          <h2 className="text-lg font-black text-[var(--c-text-main)]">Live PNR Status</h2>
-          <p className="text-sm text-[var(--c-text-muted)] mt-1">Enter your 10-digit PNR to check the latest reservation and charting status.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-black text-[var(--c-text-main)]">PNR Status</h2>
+            <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400">Live lookup</span>
+          </div>
+          <p className="text-sm text-[var(--c-text-muted)] mt-1">Enter a 10-digit PNR to request the latest reservation status from the connected provider.</p>
         </div>
         <form onSubmit={checkPnr} className="space-y-3">
           <div>
             <label className={label} htmlFor="status-pnr">10-digit PNR number</label>
             <input
               id="status-pnr" value={pnr}
-              onChange={(event) => { setPnr(event.target.value.replace(/\D/g, '').slice(0, 10)); setError(''); setResult(null) }}
+              onChange={(event) => { setPnr(event.target.value.replace(/\\D/g, '').slice(0, 10)); setError(''); setResult(null); setIsDemo(false) }}
               inputMode="numeric" autoComplete="off" maxLength={10}
               placeholder="Enter your PNR"
               className={`${field} sm:max-w-sm font-mono tracking-[0.18em] text-base`}
             />
           </div>
-          <button type="submit" className={primary} disabled={!validPnr || busy}>
-            {busy ? 'Checking PNR…' : 'Check PNR Status'}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className={primary} disabled={!validPnr || busy}>
+              {busy ? 'Checking PNR…' : 'Check PNR Status'}
+            </button>
+            <button type="button" onClick={useDemoPnr} className="px-4 py-2.5 rounded-xl border border-[var(--c-slate-border)] text-sm font-bold text-[var(--c-text-main)] hover:border-amber-500/60">
+              Use demo PNR
+            </button>
+          </div>
         </form>
         {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to continue.</p>}
+        <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-3 text-sm">
+          <p className="font-bold text-sky-300">Test without using API requests</p>
+          <p className="mt-1 text-[var(--c-text-muted)]">Use demo PNR <code className="font-mono font-bold text-[var(--c-text-main)]">{DEMO_PNR}</code>. It displays completely fictional sample details locally and never contacts the PNR provider.</p>
+        </div>
         <ErrorNote message={error} />
       </section>
       {result !== null && (
-        <section className={`${card} p-4 sm:p-5 space-y-3`} aria-live="polite">
-          <h3 className="font-bold text-lg text-[var(--c-text-main)]">PNR enquiry result</h3>
+        <section className={`${card} p-4 sm:p-5 space-y-4`} aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-bold text-lg text-[var(--c-text-main)]">PNR enquiry result</h3>
+            {isDemo
+              ? <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-amber-400">Demo data · Not real</span>
+              : <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-400">Provider response</span>}
+          </div>
+          {isDemo && <p className="rounded-lg bg-amber-500/10 border border-amber-500/25 p-3 text-sm text-amber-300">This is a fixed demonstration result. Every train, station, date and passenger detail below is fictional and must not be used for travel.</p>}
           <PnrValue value={result} />
         </section>
       )}
       <p className="text-xs text-[var(--c-text-muted)]">
-        Privacy: RailSaathi sends your PNR to its backend and the PNR API provider to retrieve the result. RailSaathi does not save the PNR or response in its railway database.
+        Privacy: For live lookups, RailSaathi sends your PNR to its backend and the PNR API provider. RailSaathi does not save the PNR or response in its railway database. The demo PNR is handled locally and makes no API request.
       </p>
     </div>
   )
