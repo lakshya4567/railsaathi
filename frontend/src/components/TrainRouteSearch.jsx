@@ -74,6 +74,39 @@ export default function TrainRouteSearch() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    const handleAssistantAction = async (event) => {
+      const action = event.detail
+      if (action?.type !== 'route-search') return
+      setError('')
+      setResults([])
+      setSearched(false)
+      const resolveStation = async (query) => {
+        const data = await searchStations(query, 1, 8)
+        const hits = data.results || []
+        const normalized = query.toLowerCase().replace(/\\s+/g, ' ').trim()
+        return hits.find((station) => station.code?.toLowerCase() === normalized || station.name?.toLowerCase() === normalized)
+          || hits[0]
+          || null
+      }
+      try {
+        const [from, to] = await Promise.all([resolveStation(action.from), resolveStation(action.to)])
+        if (!from || !to) {
+          setError('Journey AI could not match one or both station names. Please choose them from the station suggestions.')
+          return
+        }
+        setFromStation(from)
+        setToStation(to)
+        setFromText(`${from.name} (${from.code})`)
+        setToText(`${to.name} (${to.code})`)
+      } catch {
+        setError('Could not look up the requested stations. Please try again.')
+      }
+    }
+    window.addEventListener('railsaathi:assistant-action', handleAssistantAction)
+    return () => window.removeEventListener('railsaathi:assistant-action', handleAssistantAction)
+  }, [])
+
   const handleSearch = async (event) => {
     event.preventDefault()
     if (!fromStation || !toStation) {
