@@ -57,13 +57,13 @@ export default function JourneyAIWidget({
     setSteps([])
 
     if (nav) {
-      setSteps([{ text: \`Opening \${nav.label}\`, state: 'active' }])
+      setSteps([{ text: `Opening ${nav.label}`, state: 'active' }])
       await new Promise((resolve) => setTimeout(resolve, 250))
       if (requestId.current !== id) return
       if (nav.service) onOpenServices(nav.service)
       else onNavigate(nav.tab)
-      setSteps([{ text: \`Opened \${nav.label}\`, state: 'done' }])
-      setMessages((current) => [...current, { role: 'assistant', text: \`I've opened \${nav.label} for you.\`, blocks: [] }])
+      setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
+      setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
       setBusy(false)
       return
     }
