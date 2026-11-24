@@ -1,158 +1,171 @@
 import React, { useEffect, useRef, useState } from 'react'
+import AssistantBlocks from './AssistantBlocks'
+import { streamAssistantMessage } from '../services/api'
 
 const PAGE_ALIASES = [
   { words: ['home', 'homepage', 'main page'], tab: 'home', label: 'Home' },
-  { words: ['train finder', 'trains', 'train list', 'train directory'], tab: 'trains', label: 'Train Finder' },
-  { words: ['station directory', 'stations', 'station list'], tab: 'stations', label: 'Station Directory' },
-  { words: ['map', 'route map', 'national map', 'network map'], tab: 'map', label: 'Network Map' },
-  { words: ['journey ai', 'assistant', 'ai page'], tab: 'assistant', label: 'Journey AI' },
+  { words: ['train finder', 'trains page', 'train directory'], tab: 'trains', label: 'Train Finder' },
+  { words: ['station directory', 'stations page'], tab: 'stations', label: 'Station Directory' },
+  { words: ['network map', 'national map', 'map page'], tab: 'map', label: 'Network Map' },
+  { words: ['journey ai page', 'full journey ai'], tab: 'assistant', label: 'Journey AI' },
   { words: ['live tracking', 'train tracking'], tab: 'live-tracking', label: 'Live Tracking' },
 ]
 
-function parseCommand(raw) {
-  const text = raw.trim()
-  const lower = text.toLowerCase()
-  const route = lower.match(/(?:find|show|search)\s+(?:me\s+)?trains?\s+from\s+(.+?)\s+to\s+(.+?)(?:[?.!]|$)/i)
-  if (route) return { type: 'route-search', from: route[1].trim(), to: route[2].trim() }
-
-  const pnr = text.match(/\b(?:pnr\s*(?:status|check|finder)?\s*)?(\d{10})\b/i)
-  if (pnr && /pnr|status|check/i.test(lower)) return { type: 'pnr', pnr: pnr[1] }
-
-  if (/\b(pnr|reservation status)\b/i.test(text)) return { type: 'service', service: 'pnr', label: 'PNR Finder' }
-  if (/\b(food|order food|e catering|ecatering)\b/i.test(text)) return { type: 'service', service: 'food', label: 'Food on Train' }
-  if (/\b(fare|ticket price|seat availability|availability)\b/i.test(text)) return { type: 'service', service: 'fare', label: 'Fare & Seat Finder' }
-
-  const trainSearch = lower.match(/(?:search|find|look up)\s+(?:for\s+)?train\s+(.+?)(?:[?.!]|$)/i)
-  if (trainSearch) return { type: 'train-search', query: text.match(/(?:search|find|look up)\s+(?:for\s+)?train\s+(.+?)(?:[?.!]|$)/i)[1].trim() }
-
-  const stationSearch = lower.match(/(?:search|find|look up)\s+(?:for\s+)?station\s+(.+?)(?:[?.!]|$)/i)
-  if (stationSearch) return { type: 'station-search', query: text.match(/(?:search|find|look up)\s+(?:for\s+)?station\s+(.+?)(?:[?.!]|$)/i)[1].trim() }
-
-  const page = PAGE_ALIASES.find((item) => item.words.some((word) => lower.includes(word)))
-  if (page && /\b(open|go to|show|take me|navigate)\b/i.test(text)) return { type: 'navigate', ...page }
-  return null
+function navigationIntent(raw) {
+  const text = raw.toLowerCase()
+  if (!/\b(open|go to|take me to|navigate to|show me the)\b/.test(text)) return null
+  return PAGE_ALIASES.find((page) => page.words.some((word) => text.includes(word))) || null
 }
 
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-export default function JourneyAIWidget({ activeTab, onNavigate, onOpenServices, lang = 'en' }) {
+export default function JourneyAIWidget({
+  activeTab, onNavigate, onOpenServices, onSelectTrain, onSelectStation, onViewMap, lang = 'en',
+}) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [steps, setSteps] = useState([])
+  const [messages, setMessages] = useState([])
   const [notice, setNotice] = useState('')
-  const runId = useRef(0)
+  const contextRef = useRef(null)
+  const requestId = useRef(0)
   const inputRef = useRef(null)
+  const scrollRef = useRef(null)
 
-  useEffect(() => {
-    if (open) inputRef.current?.focus()
-  }, [open])
-
-  useEffect(() => () => { runId.current += 1 }, [])
+  useEffect(() => { if (open) inputRef.current?.focus() }, [open])
+  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }) }, [messages, steps, busy])
+  useEffect(() => () => { requestId.current += 1 }, [])
 
   const stop = () => {
-    runId.current += 1
+    requestId.current += 1
     setBusy(false)
-    setSteps((current) => current.length ? [...current, { label: 'Stopped by you', state: 'stopped' }] : current)
+    setSteps((current) => [...current, { text: 'Stopped. Any response arriving later will be ignored.', state: 'stopped' }])
   }
 
-  const execute = async (commandText) => {
-    if (busy) return
-    const command = parseCommand(commandText)
+  const ask = async (raw) => {
+    const question = raw.trim()
+    if (!question || busy) return
+    setInput('')
     setNotice('')
-    if (!command) {
-      setNotice('I can navigate to RailSaathi pages, search trains or stations, prepare a route search, and open railway services. Try “Find trains from Raipur to Delhi”.')
+    const id = ++requestId.current
+    const nav = navigationIntent(question)
+    setMessages((current) => [...current, { role: 'user', text: question }])
+    setBusy(true)
+    setSteps([])
+
+    if (nav) {
+      setSteps([{ text: `Opening ${nav.label}`, state: 'active' }])
+      await new Promise((resolve) => setTimeout(resolve, 250))
+      if (requestId.current !== id) return
+      onNavigate(nav.tab)
+      setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
+      setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
+      setBusy(false)
       return
     }
 
-    const id = ++runId.current
-    setBusy(true)
-    setSteps([])
-    const step = async (label, action) => {
-      if (runId.current !== id) throw new Error('stopped')
-      setSteps((current) => [...current, { label, state: 'active' }])
-      await wait(320)
-      if (runId.current !== id) throw new Error('stopped')
-      if (action) await action()
-      setSteps((current) => current.map((item, index) => index === current.length - 1 ? { ...item, state: 'done' } : item))
-    }
-
+    const history = messages.slice(-10).map((item) => ({ role: item.role, text: item.text }))
     try {
-      if (command.type === 'navigate') {
-        await step(`Opening ${command.label}`, () => onNavigate(command.tab))
-      } else if (command.type === 'service') {
-        await step(`Opening ${command.label}`, () => onOpenServices(command.service))
-      } else if (command.type === 'pnr') {
-        await step('Opening PNR Finder', () => onOpenServices('pnr', { pnr: command.pnr }))
-        await step('Filling the PNR field', () => {})
-        setNotice('Your PNR is filled. Review it, then press “Check PNR Status” yourself to submit the lookup.')
-      } else if (command.type === 'route-search') {
-        await step('Opening Train Finder', () => onNavigate('trains'))
-        await step(`Filling source: ${command.from}`, () => {})
-        await step(`Filling destination: ${command.to}`, () => {
-          window.dispatchEvent(new CustomEvent('railsaathi:assistant-action', { detail: { type: 'route-search', from: command.from, to: command.to } }))
-        })
-        setNotice('The stations are being matched to RailSaathi station records. Review the selections, then press Find Trains.')
-      } else if (command.type === 'train-search') {
-        await step('Opening Train Finder', () => onNavigate('trains'))
-        await step(`Searching trains: ${command.query}`, () => window.dispatchEvent(new CustomEvent('railsaathi:assistant-action', { detail: { type: 'train-search', query: command.query } })))
-      } else if (command.type === 'station-search') {
-        await step('Opening Station Directory', () => onNavigate('stations'))
-        await step(`Searching stations: ${command.query}`, () => window.dispatchEvent(new CustomEvent('railsaathi:assistant-action', { detail: { type: 'station-search', query: command.query } })))
-      }
+      const result = await streamAssistantMessage(
+        question,
+        history,
+        contextRef.current,
+        { language: lang },
+        (status) => {
+          if (requestId.current === id) setSteps((current) => [...current, { text: status, state: 'done' }])
+        }
+      )
+      if (requestId.current !== id) return
+      contextRef.current = result.context
+      setMessages((current) => [...current, {
+        role: 'assistant',
+        text: result.reply || 'I could not prepare an answer.',
+        blocks: result.blocks || [],
+        demo: !!result.demo,
+      }])
+      if (result.demo) setNotice('Some displayed information is a clearly labelled demonstration, not a live railway result.')
     } catch (error) {
-      if (error.message !== 'stopped') setNotice('That action could not be completed. Please try again.')
+      if (requestId.current === id) setMessages((current) => [...current, { role: 'assistant', text: error.message || 'Journey AI is unavailable right now.', blocks: [], error: true }])
     } finally {
-      if (runId.current === id) setBusy(false)
+      if (requestId.current === id) setBusy(false)
     }
   }
 
   const submit = (event) => {
     event.preventDefault()
-    const value = input.trim()
-    if (!value) return
-    setInput('')
-    execute(value)
+    ask(input)
   }
+
+  const handleAskFollowup = (question) => ask(question)
 
   return (
     <div className="fixed bottom-5 right-5 z-[1000]">
       {open && (
-        <section className="mb-3 w-[min(92vw,390px)] overflow-hidden rounded-2xl border border-[var(--c-slate-border)] bg-[var(--c-slate-dark)] shadow-2xl" aria-label="Journey AI Everywhere">
-          <header className="flex items-center justify-between border-b border-[var(--c-slate-border)] px-4 py-3">
+        <section className="mb-3 flex max-h-[min(78vh,760px)] w-[min(94vw,440px)] flex-col overflow-hidden rounded-2xl border border-[var(--c-slate-border)] bg-[var(--c-slate-dark)] shadow-2xl" aria-label="Journey AI Everywhere">
+          <header className="flex shrink-0 items-center justify-between border-b border-[var(--c-slate-border)] px-4 py-3">
             <div>
               <div className="font-black text-[var(--c-text-main)]">Journey AI</div>
-              <div className="text-[11px] text-[var(--c-text-muted)]">Website assistant · {activeTab.replace('-', ' ')}</div>
+              <div className="text-[11px] text-[var(--c-text-muted)]">Railway database · Website controls · {activeTab.replace('-', ' ')}</div>
             </div>
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-2 py-1 text-[var(--c-text-muted)] hover:bg-[var(--c-slate-surface)]" aria-label="Close Journey AI">✕</button>
           </header>
-          <div className="space-y-3 p-4">
-            <p className="text-sm text-[var(--c-text-muted)]">Tell me where to go or what to search. You can watch each action as it happens.</p>
-            <div className="flex flex-wrap gap-2">
-              {['Open Train Finder', 'Open PNR Finder', 'Open Network Map'].map((suggestion) => (
-                <button key={suggestion} type="button" disabled={busy} onClick={() => execute(suggestion)} className="rounded-full border border-[var(--c-slate-border)] px-3 py-1.5 text-xs text-[var(--c-text-main)] hover:border-amber-500/60 disabled:opacity-50">{suggestion}</button>
-              ))}
-            </div>
+
+          <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3" aria-live="polite">
+            {messages.length === 0 && (
+              <div className="space-y-3 p-1">
+                <p className="text-sm text-[var(--c-text-muted)]">Ask railway questions in your own words. I can look up RailSaathi's train and station database, plan scheduled journeys, compare trains, show routes and navigate the website.</p>
+                <div className="flex flex-wrap gap-2">
+                  {['Find trains from Raipur to Delhi', 'Tell me about train 12860', 'Show the route of train 12860 on the map', 'Open Network Map'].map((suggestion) => (
+                    <button key={suggestion} type="button" disabled={busy} onClick={() => ask(suggestion)} className="rounded-full border border-[var(--c-slate-border)] px-3 py-1.5 text-left text-xs text-[var(--c-text-main)] hover:border-amber-500/60 disabled:opacity-50">{suggestion}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((message, index) => (
+              <div key={index} className="space-y-2">
+                <div className={message.role === 'user'
+                  ? 'ml-8 rounded-xl bg-amber-500/10 px-3 py-2.5 text-sm text-[var(--c-text-main)]'
+                  : `mr-2 rounded-xl ${message.error ? 'border border-red-500/30 bg-red-500/5' : 'bg-[var(--c-obsidian)]'} px-3 py-2.5 text-sm leading-relaxed text-[var(--c-text-main)]`}>
+                  {message.text}
+                  {message.demo && <div className="mt-2 text-[11px] font-bold text-amber-400">DEMO information</div>}
+                </div>
+                {message.role === 'assistant' && message.blocks?.length > 0 && (
+                  <AssistantBlocks
+                    blocks={message.blocks}
+                    isLatest={index === messages.length - 1}
+                    lang={lang}
+                    onSelectTrain={onSelectTrain}
+                    onSelectStation={onSelectStation}
+                    onViewMap={onViewMap}
+                    onAsk={handleAskFollowup}
+                    onOpenServices={onOpenServices}
+                  />
+                )}
+              </div>
+            ))}
             {steps.length > 0 && (
-              <div className="rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] p-3" aria-live="polite">
-                <div className="mb-2 text-xs font-bold uppercase tracking-wider text-[var(--c-text-muted)]">Visible actions</div>
-                <ol className="space-y-2">
+              <div className="rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] p-3">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--c-text-muted)]">Journey AI activity</div>
+                <ol className="space-y-1.5">
                   {steps.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm">
-                      <span className={item.state === 'done' ? 'text-emerald-400' : item.state === 'stopped' ? 'text-red-400' : 'text-amber-400'}>{item.state === 'done' ? '✓' : item.state === 'stopped' ? 'Ⅱ' : '●'}</span>
-                      <span className={item.state === 'active' ? 'text-[var(--c-text-main)]' : 'text-[var(--c-text-muted)]'}>{item.label}</span>
+                    <li key={index} className="flex gap-2 text-xs">
+                      <span className={item.state === 'stopped' ? 'text-red-400' : 'text-emerald-400'}>{item.state === 'stopped' ? 'Ⅱ' : '✓'}</span>
+                      <span className="text-[var(--c-text-muted)]">{item.text}</span>
                     </li>
                   ))}
                 </ol>
               </div>
             )}
+            {busy && <div className="px-2 text-xs text-amber-400">Journey AI is working with your railway data…</div>}
             {notice && <p role="status" className="rounded-lg bg-amber-500/10 p-3 text-xs text-amber-300">{notice}</p>}
-            <form onSubmit={submit} className="flex gap-2">
-              <input ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} maxLength={240} placeholder="e.g. Find trains from Raipur to Delhi" className="min-w-0 flex-1 rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] px-3 py-2.5 text-sm text-[var(--c-text-main)] outline-none focus:border-amber-500" />
-              {busy ? <button type="button" onClick={stop} className="rounded-xl bg-red-500 px-3 text-sm font-bold text-white">Stop</button> : <button type="submit" disabled={!input.trim()} className="rounded-xl bg-amber-500 px-4 text-sm font-black text-slate-950 disabled:opacity-50">Go</button>}
-            </form>
-            <p className="text-[10px] text-[var(--c-text-muted)]">PNR lookups are never submitted automatically. Review personal details before continuing.</p>
           </div>
+
+          <form onSubmit={submit} className="flex shrink-0 gap-2 border-t border-[var(--c-slate-border)] p-3">
+            <input ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} maxLength={500} placeholder="Ask about trains, stations or journeys…" className="min-w-0 flex-1 rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-obsidian)] px-3 py-2.5 text-sm text-[var(--c-text-main)] outline-none focus:border-amber-500" />
+            {busy
+              ? <button type="button" onClick={stop} className="rounded-xl bg-red-500 px-3 text-sm font-bold text-white">Stop</button>
+              : <button type="submit" disabled={!input.trim()} className="rounded-xl bg-amber-500 px-4 text-sm font-black text-slate-950 disabled:opacity-50">Send</button>}
+          </form>
+          <p className="px-3 pb-2 text-[10px] text-[var(--c-text-muted)]">Uses stored timetable data, not live train tracking. Review information before making travel decisions.</p>
         </section>
       )}
       <button type="button" onClick={() => setOpen((value) => !value)} className="ml-auto flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500 px-4 py-3 font-black text-slate-950 shadow-xl hover:bg-amber-400" aria-expanded={open}>
