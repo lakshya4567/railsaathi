@@ -110,8 +110,9 @@ function PnrValue({ value }) {
   return <span>{String(value)}</span>
 }
 
-function PnrTab() {
-  const [pnr, setPnr] = useState('')
+function PnrTab({ initialPnr = '' }) {
+  const [pnr, setPnr] = useState(initialPnr)
+  useEffect(() => { if (initialPnr) setPnr(String(initialPnr).replace(/\\D/g, '').slice(0, 10)) }, [initialPnr])
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -361,7 +362,7 @@ export default function Services({ lang = 'en', initial = null, onAskAI }) {
           </button>
         ))}
       </div>
-      {tab === 'pnr' && <PnrTab />}
+      {tab === 'pnr' && <PnrTab initialPnr={initial?.pnr || ''} />}
       {tab === 'food' && <FoodTab t={t} initial={initial} />}
       {tab === 'fare' && <FareSeatsTab t={t} lang={lang} onAskAI={onAskAI} />}
       {tab === 'live' && <LiveTab t={t} lang={lang} onAskAI={onAskAI} />}
