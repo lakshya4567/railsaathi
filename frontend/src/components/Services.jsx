@@ -182,13 +182,6 @@ function PnrTab({ initialPnr = '' }) {
     }
   }
 
-  const useDemoPnr = () => {
-    setPnr(DEMO_PNR)
-    setResult(null)
-    setIsDemo(false)
-    setError('')
-  }
-
   return (
     <div className="space-y-4">
       <section className={`${card} p-4 sm:p-5 space-y-4`}>
@@ -214,16 +207,9 @@ function PnrTab({ initialPnr = '' }) {
             <button type="submit" className={primary} disabled={!validPnr || busy}>
               {busy ? 'Checking PNR…' : 'Check PNR Status'}
             </button>
-            <button type="button" onClick={useDemoPnr} className="px-4 py-2.5 rounded-xl border border-[var(--c-slate-border)] text-sm font-bold text-[var(--c-text-main)] hover:border-amber-500/60">
-              Use demo PNR
-            </button>
           </div>
         </form>
         {pnr.length > 0 && !validPnr && <p className="text-xs text-amber-500">Enter all 10 digits to continue.</p>}
-        <div className="rounded-xl border border-sky-500/25 bg-sky-500/5 p-3 text-sm">
-          <p className="font-bold text-sky-300">Test without using API requests</p>
-          <p className="mt-1 text-[var(--c-text-muted)]">Use demo PNR <code className="font-mono font-bold text-[var(--c-text-main)]">{DEMO_PNR}</code>. It displays completely fictional sample details locally and never contacts the PNR provider.</p>
-        </div>
         <ErrorNote message={error} />
       </section>
       {result !== null && (
