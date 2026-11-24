@@ -290,11 +290,7 @@ export default function JourneyAIWidget({
       {cursorEnabled && cursorVisible && (
         <div aria-hidden="true" className={`pointer-events-none fixed z-[99999] transition-all duration-500 ease-in-out ${cursorPulse ? 'scale-110' : 'scale-100'}`} style={{ left: cursorPosition.x, top: cursorPosition.y, transform: 'translate(-2px, -2px)' }}>
           <span className={`absolute -left-3 -top-3 h-10 w-10 rounded-full border-2 border-[#e88a62]/80 transition-all duration-300 ${cursorPulse ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}`} />
-          <svg viewBox="0 0 42 48" width="40" height="46" className="relative drop-shadow-[0_6px_12px_rgba(0,0,0,.42)]">
-            <path d="M8.5 5.8c0-2.5 2.7-3.9 4.8-2.4l23 17.1c2.7 2 1.6 6.2-1.7 6.6l-9.1 1.1 5.2 9.1c1.2 2.1.4 4.8-1.8 5.9l-1.2.6c-2.1 1.1-4.8.3-5.9-1.8l-5.1-9-4.9 7.4c-1.9 2.8-6.2 1.6-6.3-1.8L8.5 5.8Z" fill="#f7f4ec" stroke="#173b32" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round"/>
-            <path d="m24.1 28.2 5.2 9.1" stroke="#e88a62" strokeWidth="3.4" strokeLinecap="round"/>
-            <path d="m12 8.3 17.2 12.8" stroke="#ffffff" strokeOpacity=".9" strokeWidth="1.8" strokeLinecap="round"/>
-          </svg>
+          <img src="/cursor.png" alt="" draggable="false" className="relative h-12 w-12 select-none object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,.42)]" />
           {cursorPulse && <span className="absolute left-2 top-2 h-2.5 w-2.5 rounded-full bg-[#e88a62] shadow-[0_0_0_4px_rgba(232,138,98,.2)]" />}
         </div>
       )}
