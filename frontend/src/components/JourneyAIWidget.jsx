@@ -29,6 +29,12 @@ export default function JourneyAIWidget({
   const [steps, setSteps] = useState([])
   const [messages, setMessages] = useState([])
   const [notice, setNotice] = useState('')
+  const [cursorEnabled, setCursorEnabled] = useState(() => {
+    try { return localStorage.getItem('railsaathi_ai_cursor') === 'true' } catch { return false }
+  })
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
+  const [cursorVisible, setCursorVisible] = useState(false)
+  const [cursorPulse, setCursorPulse] = useState(false)
   const contextRef = useRef(null)
   const requestId = useRef(0)
   const inputRef = useRef(null)
@@ -37,6 +43,29 @@ export default function JourneyAIWidget({
   useEffect(() => { if (open) inputRef.current?.focus() }, [open])
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }) }, [messages, steps, busy])
   useEffect(() => () => { requestId.current += 1 }, [])
+
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  const guideCursorTo = async (selector, fallback = 'main') => {
+    if (!cursorEnabled) return
+    const target = document.querySelector(selector) || document.querySelector(fallback)
+    if (!target) return
+    const rect = target.getBoundingClientRect()
+    setCursorVisible(true)
+    setCursorPosition({ x: Math.round(rect.left + Math.min(rect.width / 2, 90)), y: Math.round(rect.top + Math.min(rect.height / 2, 35)) })
+    setCursorPulse(true)
+    await wait(420)
+    setCursorPulse(false)
+  }
+
+  const toggleCursor = () => {
+    setCursorEnabled((current) => {
+      const next = !current
+      try { localStorage.setItem('railsaathi_ai_cursor', String(next)) } catch {}
+      if (!next) setCursorVisible(false)
+      return next
+    })
+  }
 
   const stop = () => {
     requestId.current += 1
@@ -202,6 +231,16 @@ export default function JourneyAIWidget({
           </form>
           <p className="px-3 pb-2 text-[10px] text-[var(--c-text-muted)]">Uses stored timetable data, not live train tracking. Review information before making travel decisions.</p>
         </section>
+      )}
+      {cursorEnabled && cursorVisible && (
+        <div aria-hidden="true" className={`pointer-events-none fixed z-[2000] transition-all duration-500 ease-in-out ${cursorPulse ? 'scale-110' : 'scale-100'}`} style={{ left: cursorPosition.x, top: cursorPosition.y, transform: 'translate(-2px, -2px)' }}>
+          <svg viewBox="0 0 34 42" width="34" height="42" className="drop-shadow-[0_3px_5px_rgba(0,0,0,.45)]">
+            <path d="M3 2.5 29 23l-11.5 1.2-6 11.3L3 2.5Z" fill="#f3f0e7" stroke="#1e3934" strokeWidth="2.4" strokeLinejoin="round"/>
+            <path d="m18 25 6 11" stroke="#e88a62" strokeWidth="3" strokeLinecap="round"/>
+            <circle cx="4" cy="4" r="2" fill="#e88a62"/>
+          </svg>
+          {cursorPulse && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#1e3934] bg-[#e88a62]" />}
+        </div>
       )}
       <button type="button" onClick={() => setOpen((value) => !value)} className="ml-auto flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500 px-4 py-3 font-black text-slate-950 shadow-xl hover:bg-amber-400" aria-expanded={open}>
         <span aria-hidden="true">✦</span><span>Journey AI</span>
