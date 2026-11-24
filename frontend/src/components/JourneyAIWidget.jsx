@@ -85,6 +85,26 @@ export default function JourneyAIWidget({
     const id = ++requestId.current
     const nav = navigationIntent(question)
     const routeSearch = question.match(/(?:find|show|search)\s+(?:me\s+)?trains?\s+from\s+(.+?)\s+to\s+(.+?)(?:[?.!]|$)/i)
+    // A route-on-map request from the Everywhere widget should open the actual
+    // Network Map page. The full Journey AI tab keeps its in-chat map behaviour.
+    const routeOnMapMatch = question.match(/\b(?:show|view|display|draw|open)\b.*\b(?:route|path)\b.*\b(?:map|network map)\b|\b(?:route|path)\b.*\b(?:on|in)\s+(?:the\s+)?map\b/i)
+    const routeTrainMatch = question.match(/\b(?:train\s*)?(\d{5})\b/i)
+    if (routeOnMapMatch && routeTrainMatch && activeTab !== 'assistant') {
+      setSteps([{ text: `Opening Network Map for train ${routeTrainMatch[1]}`, state: 'active' }])
+      await wait(220)
+      if (requestId.current !== id) return
+      onViewMap(routeTrainMatch[1])
+      if (cursorEnabled) {
+        await wait(250)
+        await guideCursorTo('.leaflet-container', 'main')
+        await wait(800)
+        setCursorVisible(false)
+      }
+      setSteps([{ text: 'Opened Network Map', state: 'done' }, { text: `Loaded route for train ${routeTrainMatch[1]}`, state: 'done' }])
+      setMessages((current) => [...current, { role: 'assistant', text: `I've opened Network Map and loaded the route for train ${routeTrainMatch[1]}.`, blocks: [] }])
+      setBusy(false)
+      return
+    }
     // Handle a train number in the same request as a page-navigation command.
     // Keep the number as text so leading zeroes (for example, 01208) are preserved.
     const mapTrainMatch = nav?.tab === 'map'
