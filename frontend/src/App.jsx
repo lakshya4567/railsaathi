@@ -5,6 +5,7 @@ import Trains from './components/Trains'
 import Stations from './components/Stations'
 import NationalMap from './components/NationalMap'
 import JourneyAssistant from './components/JourneyAssistant'
+import JourneyAIWidget from './components/JourneyAIWidget'
 import Services from './components/Services'
 import LiveTracking from './components/LiveTracking'
 import TrainDetailModal from './components/TrainDetailModal'
@@ -94,6 +95,13 @@ export default function App() {
         )}
         {activeTab === 'live-tracking' && <LiveTracking />}
       </main>
+
+      <JourneyAIWidget
+        activeTab={activeTab}
+        onNavigate={setActiveTab}
+        onOpenServices={handleOpenServices}
+        lang={lang}
+      />
 
       {/* Modals */}
       {selectedTrainNumber && (
