@@ -51,20 +51,32 @@ export default function JourneyAIWidget({
     setNotice('')
     const id = ++requestId.current
     const nav = navigationIntent(question)
+    const routeSearch = question.match(/(?:find|show|search)\s+(?:me\s+)?trains?\s+from\s+(.+?)\s+to\s+(.+?)(?:[?.!]|$)/i)
     setMessages((current) => [...current, { role: 'user', text: question }])
     setBusy(true)
     setSteps([])
 
     if (nav) {
-      setSteps([{ text: `Opening ${nav.label}`, state: 'active' }])
+      setSteps([{ text: \`Opening \${nav.label}\`, state: 'active' }])
       await new Promise((resolve) => setTimeout(resolve, 250))
       if (requestId.current !== id) return
       if (nav.service) onOpenServices(nav.service)
       else onNavigate(nav.tab)
-      setSteps([{ text: `Opened ${nav.label}`, state: 'done' }])
-      setMessages((current) => [...current, { role: 'assistant', text: `I've opened ${nav.label} for you.`, blocks: [] }])
+      setSteps([{ text: \`Opened \${nav.label}\`, state: 'done' }])
+      setMessages((current) => [...current, { role: 'assistant', text: \`I've opened \${nav.label} for you.\`, blocks: [] }])
       setBusy(false)
       return
+    }
+
+    if (routeSearch) {
+      setSteps([{ text: 'Opening Train Finder and preparing your route fields', state: 'active' }])
+      onNavigate('trains')
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      if (requestId.current !== id) return
+      window.dispatchEvent(new CustomEvent('railsaathi:assistant-action', {
+        detail: { type: 'route-search', from: routeSearch[1].trim(), to: routeSearch[2].trim() }
+      }))
+      setSteps([{ text: 'Opened Train Finder and prepared the source and destination fields. Review the station matches before searching.', state: 'done' }])
     }
 
     const history = messages.slice(-10).map((item) => ({ role: item.role, text: item.text }))
