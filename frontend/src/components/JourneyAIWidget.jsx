@@ -52,13 +52,14 @@ export default function JourneyAIWidget({
     const target = candidates.find((element) => {
       const bounds = element.getBoundingClientRect()
       return bounds.width > 0 && bounds.height > 0
-    }) || document.querySelector(fallback)
-    if (!target) return
+    }) || document.querySelector(fallback) || document.body
     const rect = target.getBoundingClientRect()
+    const x = Math.max(12, Math.min(window.innerWidth - 42, rect.left + Math.min(rect.width / 2, 90)))
+    const y = Math.max(12, Math.min(window.innerHeight - 48, rect.top + Math.min(rect.height / 2, 35)))
+    setCursorPosition({ x: Math.round(x), y: Math.round(y) })
     setCursorVisible(true)
-    setCursorPosition({ x: Math.round(rect.left + Math.min(rect.width / 2, 90)), y: Math.round(rect.top + Math.min(rect.height / 2, 35)) })
     setCursorPulse(true)
-    await wait(420)
+    await wait(650)
     setCursorPulse(false)
   }
 
@@ -122,6 +123,12 @@ export default function JourneyAIWidget({
       else if (nav.tab === 'map' && mapTrainMatch) onViewMap(mapTrainMatch[1])
       else onNavigate(nav.tab)
 
+      if (cursorEnabled) {
+        await wait(320)
+        await guideCursorTo('.nav-link.active, .mobile-nav-link.active, .features-sidebar-link.active', 'main')
+        await wait(900)
+        setCursorVisible(false)
+      }
       if (nav.tab === 'map' && mapTrainMatch) {
         setSteps([
           { text: 'Opened Network Map', state: 'done' },
@@ -264,7 +271,7 @@ export default function JourneyAIWidget({
         </section>
       )}
       {cursorEnabled && cursorVisible && (
-        <div aria-hidden="true" className={`pointer-events-none fixed z-[2000] transition-all duration-500 ease-in-out ${cursorPulse ? 'scale-110' : 'scale-100'}`} style={{ left: cursorPosition.x, top: cursorPosition.y, transform: 'translate(-2px, -2px)' }}>
+        <div aria-hidden="true" className={`pointer-events-none fixed z-[99999] transition-all duration-500 ease-in-out ${cursorPulse ? 'scale-110' : 'scale-100'}`} style={{ left: cursorPosition.x, top: cursorPosition.y, transform: 'translate(-2px, -2px)' }}>
           <svg viewBox="0 0 34 42" width="34" height="42" className="drop-shadow-[0_3px_5px_rgba(0,0,0,.45)]">
             <path d="M3 2.5 29 23l-11.5 1.2-6 11.3L3 2.5Z" fill="#f3f0e7" stroke="#1e3934" strokeWidth="2.4" strokeLinejoin="round"/>
             <path d="m18 25 6 11" stroke="#e88a62" strokeWidth="3" strokeLinecap="round"/>
