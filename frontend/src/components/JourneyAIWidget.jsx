@@ -46,12 +46,13 @@ export default function JourneyAIWidget({
 
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-  const guideCursorTo = async (selector, fallback = 'main') => {
+  const guideCursorTo = async (selector, fallback = 'main', targetLabel = '') => {
     if (!cursorEnabled) return
     const candidates = [...document.querySelectorAll(selector)]
     const target = candidates.find((element) => {
       const bounds = element.getBoundingClientRect()
-      return bounds.width > 0 && bounds.height > 0
+      const labelMatches = !targetLabel || element.textContent.toLowerCase().includes(targetLabel.toLowerCase())
+      return bounds.width > 0 && bounds.height > 0 && labelMatches
     }) || document.querySelector(fallback) || document.body
     const rect = target.getBoundingClientRect()
     const x = Math.max(18, Math.min(window.innerWidth - 48, rect.left + Math.min(rect.width / 2, 90)))
@@ -132,10 +133,9 @@ export default function JourneyAIWidget({
           await guideCursorTo('.all-features-trigger', 'header')
         } else {
           await guideCursorTo(
-            nav.tab === 'map'
-              ? '.nav-link[data-tab="map"], .nav-link.active, .mobile-nav-link'
-              : '.nav-link.active, .mobile-nav-link.active',
-            'header'
+            '.nav-link, .mobile-nav-link, .features-sidebar-link',
+            'header',
+            nav.label
           )
         }
       } else {
