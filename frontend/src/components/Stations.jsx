@@ -34,6 +34,18 @@ export default function Stations({ onSelectStation }) {
     loadStations(page, query)
   }, [page])
 
+  useEffect(() => {
+    const handleAssistantAction = (event) => {
+      const action = event.detail
+      if (action?.type !== 'station-search') return
+      setQuery(action.query)
+      setPage(1)
+      loadStations(1, action.query)
+    }
+    window.addEventListener('railsaathi:assistant-action', handleAssistantAction)
+    return () => window.removeEventListener('railsaathi:assistant-action', handleAssistantAction)
+  }, [])
+
   const handleSearch = (e) => {
     e.preventDefault()
     setPage(1)
