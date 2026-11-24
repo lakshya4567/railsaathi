@@ -97,16 +97,18 @@ export default function JourneyAIWidget({
     const routeOnMapMatch = question.match(/\b(?:show|view|display|draw|open)\b.*\b(?:route|path)\b.*\b(?:map|network map)\b|\b(?:route|path)\b.*\b(?:on|in)\s+(?:the\s+)?map\b/i)
     const routeTrainMatch = question.match(/\b(?:train\s*)?(\d{5})\b/i)
     if (routeOnMapMatch && routeTrainMatch && activeTab !== 'assistant') {
-      setSteps([{ text: `Opening Network Map for train ${routeTrainMatch[1]}`, state: 'active' }])
-      await wait(220)
+      setSteps([{ text: `Preparing to open Network Map for train ${routeTrainMatch[1]}`, state: 'active' }])
+      if (requestId.current !== id) return
+      // Let the visual cursor finish its journey and click animation BEFORE
+      // changing pages. It is only an animation; onViewMap performs navigation.
+      if (cursorEnabled) {
+        await guideCursorTo('.nav-link[href*="map"], .nav-link[data-tab="map"], .mobile-nav-link[href*="map"], .features-sidebar-link[href*="map"]', 'main')
+      } else {
+        await wait(220)
+      }
       if (requestId.current !== id) return
       onViewMap(routeTrainMatch[1])
-      if (cursorEnabled) {
-        await wait(250)
-        await guideCursorTo('.leaflet-container', 'main')
-        await wait(800)
-        setCursorVisible(false)
-      }
+      setCursorVisible(false)
       setSteps([{ text: 'Opened Network Map', state: 'done' }, { text: `Loaded route for train ${routeTrainMatch[1]}`, state: 'done' }])
       setMessages((current) => [...current, { role: 'assistant', text: `I've opened Network Map and loaded the route for train ${routeTrainMatch[1]}.`, blocks: [] }])
       setBusy(false)
