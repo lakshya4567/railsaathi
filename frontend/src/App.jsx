@@ -12,6 +12,7 @@ import TrainDetailModal from './components/TrainDetailModal'
 import StationDetailModal from './components/StationDetailModal'
 import { TrainIcon } from './components/Icons'
 import { getInitialLang, saveLang } from './utils/i18n'
+import { AccountProvider } from './context/AccountContext'
 
 // Dark is the default appearance. A passenger's saved choice (via the theme button) still wins.
 const DEFAULT_THEME = 'dark'
@@ -24,7 +25,7 @@ function getInitialTheme() {
   }
 }
 
-export default function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('home')
   const [theme, setTheme] = useState(getInitialTheme)
   const [selectedTrainNumber, setSelectedTrainNumber] = useState(null)
@@ -135,4 +136,9 @@ export default function App() {
       </footer>
     </div>
   )
+}
+
+
+export default function App() {
+  return <AccountProvider><AppContent /></AccountProvider>
 }

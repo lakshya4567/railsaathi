@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { HomeIcon, TrainIcon, StationIcon, MapIcon, SparkIcon, SunIcon, MoonIcon, TicketIcon, GlobeIcon, FoodIcon, SearchIcon, ClockIcon, CloseIcon } from './Icons'
 import { makeT } from '../utils/i18n'
+import { useRailSaathiAccount } from '../context/AccountContext'
 
 const NAV = [
   { id: 'home', key: 'nav.home', icon: HomeIcon },
@@ -19,6 +20,8 @@ const SERVICE_LINKS = [
 ]
 
 export default function Navbar({ activeTab, setActiveTab, onOpenServices = () => {}, theme, setTheme, lang = 'en', setLang = () => {} }) {
+  const { account, promptSignIn, signOut } = useRailSaathiAccount()
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const t = makeT(lang)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navItems = NAV.map((n) => ({ ...n, label: n.key ? t(n.key) : n.label }))
@@ -56,6 +59,23 @@ export default function Navbar({ activeTab, setActiveTab, onOpenServices = () =>
 
           <div className="header-actions">
             <span className="network-status"><i /> NETWORK DIRECTORY</span>
+            <div className="relative">
+              <button type="button" onClick={() => account ? setAccountMenuOpen((open) => !open) : promptSignIn()} className="inline-flex items-center gap-2 rounded-full border border-[var(--c-slate-border)] bg-[var(--c-slate-dark)] px-2 py-1.5 hover:border-amber-500/50 transition" aria-label={account ? 'Open account menu' : 'Sign in with Google'} aria-expanded={accountMenuOpen}>
+                {account?.picture ? <img src={account.picture} alt="" referrerPolicy="no-referrer" className="h-8 w-8 rounded-full object-cover" /> : <span className="h-8 w-8 rounded-full bg-[var(--c-slate-surface)] flex items-center justify-center text-xs font-bold text-amber-500">RS</span>}
+                <span className="hidden xl:inline text-xs font-semibold text-[var(--c-text-main)]">{account?.name ? account.name.split(' ')[0] : 'Account'}</span>
+              </button>
+              {accountMenuOpen && account && (
+                <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-[var(--c-slate-border)] bg-[var(--c-slate-dark)] p-3 shadow-2xl">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {account.picture ? <img src={account.picture} alt="" referrerPolicy="no-referrer" className="h-10 w-10 rounded-full object-cover" /> : <span className="h-10 w-10 rounded-full bg-[var(--c-slate-surface)]" />}
+                    <div className="min-w-0"><div className="truncate text-sm font-bold text-[var(--c-text-main)]">{account.name || 'RailSaathi account'}</div><div className="truncate text-xs text-[var(--c-text-muted)]">{account.email}</div></div>
+                  </div>
+                  <button type="button" onClick={() => { setAccountMenuOpen(false); navigate('assistant') }} className="mt-3 w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-[var(--c-text-main)] hover:bg-[var(--c-slate-surface)]">Journey AI settings</button>
+                  <button type="button" onClick={() => { signOut(); setAccountMenuOpen(false) }} className="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-400 hover:bg-[var(--c-slate-surface)]">Sign out</button>
+                </div>
+              )}
+            </div>
+
             <button onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')} className="theme-toggle" aria-label={lang === 'hi' ? 'Switch to English' : 'हिंदी में बदलें'} title={lang === 'hi' ? 'English' : 'हिंदी'}>
               <span><GlobeIcon /></span><span className="theme-label">{t('nav.lang')}</span>
             </button>
