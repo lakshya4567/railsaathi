@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import AssistantBlocks from './AssistantBlocks'
-import { streamAssistantMessage, getAssistantStatus, readTicket, searchStations } from '../services/api'
+import { streamAssistantMessage, getAssistantStatus, readTicket, searchStations, getAccountProfile, saveAccountPreferences } from '../services/api'
 import { makeT } from '../utils/i18n'
 import { loadPrefs, savePrefs } from '../utils/prefs'
 import { prepareImage } from '../utils/image'
@@ -9,6 +9,7 @@ import { MicIcon, ImageIcon, SettingsIcon, SpeakerIcon, CloseIcon, SearchIcon, C
 const MAX_HISTORY = 10 // recent messages sent along with each question
 const STORE_KEY = 'railsaathi_assistant_v2'
 const MAX_STORED = 30
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
 
 // The conversation survives switching tabs (e.g. to the map) for this browser session.
 function loadSaved() {
@@ -56,6 +57,10 @@ export default function JourneyAssistant({
   const [stationQuery, setStationQuery] = useState('')
   const [stationHits, setStationHits] = useState([])
   const [notice, setNotice] = useState('')
+  const [googleCredential, setGoogleCredential] = useState(null)
+  const [account, setAccount] = useState(null)
+  const [accountError, setAccountError] = useState('')
+  const googleButtonRef = useRef(null)
   const contextRef = useRef(saved?.context || null) // small conversation state returned by the server
   const endRef = useRef(null)
   const fileRef = useRef(null)
@@ -73,6 +78,53 @@ export default function JourneyAssistant({
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages, loading, steps])
   useEffect(() => { savePrefs(prefs) }, [prefs])
+
+  // Load Google Identity Services only while Journey AI settings are open.
+  useEffect(() => {
+    if (!settingsOpen || !GOOGLE_CLIENT_ID || !googleButtonRef.current) return undefined
+    let cancelled = false
+    const renderGoogleButton = () => {
+      if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) return
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: async (response) => {
+          if (!response?.credential) return
+          setAccountError('')
+          setGoogleCredential(response.credential)
+          try {
+            const profile = await getAccountProfile(response.credential)
+            setAccount(profile.user)
+            setPrefs((current) => ({ ...current, ...profile.preferences }))
+          } catch (error) {
+            setGoogleCredential(null)
+            setAccountError(error.message || 'Could not load your RailSaathi account.')
+          }
+        },
+      })
+      googleButtonRef.current.innerHTML = ''
+      window.google.accounts.id.renderButton(googleButtonRef.current, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', width: 280 })
+    }
+    if (window.google?.accounts?.id) renderGoogleButton()
+    else {
+      let script = document.querySelector('script[data-railsaathi-google-identity]')
+      if (!script) {
+        script = document.createElement('script')
+        script.src = 'https://accounts.google.com/gsi/client'
+        script.async = true
+        script.defer = true
+        script.dataset.railsaathiGoogleIdentity = 'true'
+        document.head.appendChild(script)
+      }
+      script.addEventListener('load', renderGoogleButton)
+    }
+    return () => { cancelled = true }
+  }, [settingsOpen])
+
+  useEffect(() => {
+    if (!googleCredential || !account) return
+    saveAccountPreferences(googleCredential, { ...prefs, language: lang })
+      .catch((error) => setAccountError(error.message || 'Could not sync preferences.'))
+  }, [prefs, googleCredential, account, lang])
   useEffect(() => () => { window.speechSynthesis?.cancel(); recRef.current?.abort?.() }, [])
 
   const speak = (text) => {
@@ -101,7 +153,7 @@ export default function JourneyAssistant({
     try {
       const data = await streamAssistantMessage(
         question, history, contextRef.current,
-        { language: lang, preferences: { home_station: prefs.home_station } },
+        { language: lang, preferences: prefs.personalization_enabled ? { home_station: prefs.home_station } : {} },
         (s) => setSteps((prev) => [...prev, s])
       )
       contextRef.current = data.context
@@ -299,6 +351,27 @@ export default function JourneyAssistant({
               <strong className="text-[var(--c-text-main)]">{t('ai.settings')}</strong>
               <button type="button" onClick={() => setSettingsOpen(false)} className="text-lg" aria-label="Close"><CloseIcon /></button>
             </div>
+            <div className="space-y-2 rounded-xl border border-[var(--c-slate-border)] bg-[var(--c-slate-dark)] p-3">
+              <div className="font-bold text-[var(--c-text-main)]">RailSaathi account</div>
+              {account ? (
+                <div className="flex items-center gap-3">
+                  {account.picture ? <img src={account.picture} alt="" referrerPolicy="no-referrer" className="h-9 w-9 rounded-full" /> : <span className="h-9 w-9 rounded-full bg-[var(--c-slate-surface)]" />}
+                  <div className="min-w-0 flex-1"><div className="truncate font-semibold text-[var(--c-text-main)]">{account.name || 'Signed in'}</div><div className="truncate text-xs text-[var(--c-text-muted)]">{account.email}</div></div>
+                  <button type="button" className="text-xs font-bold text-blue-400" onClick={() => { window.google?.accounts?.id?.disableAutoSelect(); setGoogleCredential(null); setAccount(null); setAccountError('') }}>Sign out</button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-[var(--c-text-muted)]">Sign in to sync your Journey AI preferences across devices, or continue as a guest.</p>
+                  {GOOGLE_CLIENT_ID ? <div ref={googleButtonRef} className="min-h-10" /> : <p className="text-xs text-amber-400">Google sign-in needs the VITE_GOOGLE_CLIENT_ID frontend environment variable.</p>}
+                  <span className="text-[11px] text-[var(--c-text-muted)]">Guest mode is active. Your preferences stay in this browser.</span>
+                </>
+              )}
+              {accountError && <p role="alert" className="text-xs text-red-400">{accountError}</p>}
+            </div>
+            <label className="flex items-start gap-2 text-xs text-[var(--c-text-main)]">
+              <input type="checkbox" checked={prefs.personalization_enabled !== false} onChange={(e) => setPrefs({ ...prefs, personalization_enabled: e.target.checked })} />
+              <span><strong>Allow Journey AI personalization</strong><span className="block text-[var(--c-text-muted)]">Use saved preferences such as your home station when answering. You can turn this off anytime.</span></span>
+            </label>
             <div className="space-y-1.5">
               <label className="text-xs font-mono uppercase tracking-wider text-[var(--c-text-muted)]">{t('ai.homeStation')}</label>
               {prefs.home_station ? (
