@@ -2,7 +2,7 @@
 // the saved home station to the assistant, so "from home" works).
 
 const KEY = 'railsaathi_prefs_v1'
-export const DEFAULT_PREFS = { home_station: null, speak: false, autoSendVoice: true }
+export const DEFAULT_PREFS = { home_station: null, speak: false, autoSendVoice: true, personalization_enabled: true }
 
 export function loadPrefs() {
   try {
@@ -14,6 +14,7 @@ export function loadPrefs() {
         ? { code: hs.code.toUpperCase(), name: typeof hs.name === 'string' ? hs.name.slice(0, 80) : null } : null,
       speak: raw.speak === true,
       autoSendVoice: raw.autoSendVoice !== false,
+      personalization_enabled: raw.personalization_enabled !== false,
     }
   } catch {
     return { ...DEFAULT_PREFS }
