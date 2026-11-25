@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .database import ping, ensure_indexes, close_connection
-from .routes import trains_router, stations_router, search_router, assistant_router, demo_router, pnr_router
+from .routes import trains_router, stations_router, search_router, assistant_router, demo_router, pnr_router, account_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.origins_list,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],  # POST is needed by /api/assistant/chat
+    allow_methods=["GET", "POST", "PUT"],  # POST is needed by /api/assistant/chat
     allow_headers=["*"],
 )
 
@@ -53,6 +53,7 @@ app.include_router(search_router)
 app.include_router(assistant_router)
 app.include_router(demo_router)
 app.include_router(pnr_router)
+app.include_router(account_router)
 
 
 # ── Health ─────────────────────────────────────────────────────────────────
