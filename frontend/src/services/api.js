@@ -268,3 +268,27 @@ export async function demoFoodOrder(train_number, station, items) {
   if (!res.ok) throw await readError(res)
   return res.json()
 }
+
+
+// ── Google account and cloud-synced Journey AI preferences ──────────────────
+export async function getAccountProfile(idToken) {
+  const res = await fetch(`${API_BASE}/account/me`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw await readError(res)
+  return res.json()
+}
+
+export async function saveAccountPreferences(idToken, preferences) {
+  const res = await fetch(`${API_BASE}/account/me/preferences`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+    body: JSON.stringify({
+      home_station: preferences.home_station || null,
+      language: preferences.language === 'hi' ? 'hi' : 'en',
+      personalization_enabled: preferences.personalization_enabled !== false,
+    }),
+  })
+  if (!res.ok) throw await readError(res)
+  return res.json()
+}
