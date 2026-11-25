@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     db_name: str = Field("indian_railway", alias="DB_NAME")
     allowed_origins: str = Field("http://localhost:5173", alias="ALLOWED_ORIGINS")
 
+    google_client_id: str = Field("", alias="GOOGLE_CLIENT_ID")
+
     # --- AI journey assistant (all optional: the rest of the API works without them) ---
     ai_provider: str = Field("gemini", alias="AI_PROVIDER")
     gemini_api_key: str = Field("", alias="GEMINI_API_KEY")
