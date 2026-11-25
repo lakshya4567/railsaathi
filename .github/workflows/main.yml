@@ -38,6 +38,7 @@ jobs:
         working-directory: frontend
         env:
           VITE_API_URL: https://railsaathi-api.vercel.app
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
         run: npm run build -- --base=/
 
       - name: Upload Pages artifact
