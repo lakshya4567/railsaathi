@@ -54,6 +54,7 @@ def ensure_indexes() -> None:
         ("stations", [("state", ASCENDING)], {"name": "idx_station_state"}),
         ("stations", [("zone", ASCENDING)], {"name": "idx_station_zone"}),
         ("import_metadata", [("collection", ASCENDING)], {"unique": True, "name": "idx_meta_collection"}),
+        ("user_profiles", [("google_sub", ASCENDING)], {"unique": True, "name": "idx_user_google_sub"}),
     ]
 
     for col_name, keys, options in indexes_to_ensure:
