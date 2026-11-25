@@ -58,7 +58,9 @@ export default function JourneyAssistant({
   const [stationHits, setStationHits] = useState([])
   const [notice, setNotice] = useState('')
   const [googleCredential, setGoogleCredential] = useState(null)
-  const [account, setAccount] = useState(null)
+  const [account, setAccount] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('railsaathi_google_account_v1') || 'null') } catch { return null }
+  })
   const [accountError, setAccountError] = useState('')
   const googleButtonRef = useRef(null)
   const contextRef = useRef(saved?.context || null) // small conversation state returned by the server
@@ -79,32 +81,42 @@ export default function JourneyAssistant({
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [messages, loading, steps])
   useEffect(() => { savePrefs(prefs) }, [prefs])
 
-  // Load Google Identity Services only while Journey AI settings are open.
+  // Restore a previously authorized Google session when Journey AI mounts.
+  // Only the public profile is cached; the short-lived Google ID token is never persisted.
   useEffect(() => {
-    if (!settingsOpen || !GOOGLE_CLIENT_ID || !googleButtonRef.current) return undefined
+    if (!GOOGLE_CLIENT_ID) return undefined
     let cancelled = false
-    const renderGoogleButton = () => {
-      if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) return
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: async (response) => {
-          if (!response?.credential) return
-          setAccountError('')
-          setGoogleCredential(response.credential)
-          try {
-            const profile = await getAccountProfile(response.credential)
-            setAccount(profile.user)
-            setPrefs((current) => ({ ...current, ...profile.preferences }))
-          } catch (error) {
-            setGoogleCredential(null)
-            setAccountError(error.message || 'Could not load your RailSaathi account.')
-          }
-        },
-      })
-      googleButtonRef.current.innerHTML = ''
-      window.google.accounts.id.renderButton(googleButtonRef.current, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', width: 280 })
+    const onCredential = async (response) => {
+      if (!response?.credential) return
+      setAccountError('')
+      setGoogleCredential(response.credential)
+      try {
+        const profile = await getAccountProfile(response.credential)
+        if (cancelled) return
+        setAccount(profile.user)
+        try { localStorage.setItem('railsaathi_google_account_v1', JSON.stringify(profile.user)) } catch {}
+        setPrefs((current) => ({ ...current, ...profile.preferences }))
+      } catch (error) {
+        if (!cancelled) {
+          setGoogleCredential(null)
+          setAccountError(error.message || 'Could not load your RailSaathi account.')
+        }
+      }
     }
-    if (window.google?.accounts?.id) renderGoogleButton()
+    window.__railsaathiGoogleCredentialHandler = onCredential
+    const initialize = () => {
+      if (cancelled || !window.google?.accounts?.id) return
+      if (!window.__railsaathiGoogleInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          auto_select: true,
+          callback: (response) => window.__railsaathiGoogleCredentialHandler?.(response),
+        })
+        window.__railsaathiGoogleInitialized = true
+      }
+      window.google.accounts.id.prompt()
+    }
+    if (window.google?.accounts?.id) initialize()
     else {
       let script = document.querySelector('script[data-railsaathi-google-identity]')
       if (!script) {
@@ -115,10 +127,27 @@ export default function JourneyAssistant({
         script.dataset.railsaathiGoogleIdentity = 'true'
         document.head.appendChild(script)
       }
-      script.addEventListener('load', renderGoogleButton)
+      script.addEventListener('load', initialize)
     }
     return () => { cancelled = true }
-  }, [settingsOpen])
+  }, [])
+
+  // Render the manual sign-in button only if silent restoration did not find an account.
+  useEffect(() => {
+    if (!settingsOpen || account || !GOOGLE_CLIENT_ID || !googleButtonRef.current) return undefined
+    let cancelled = false
+    const renderButton = () => {
+      if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) return
+      googleButtonRef.current.innerHTML = ''
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: 'standard', theme: 'filled_black', size: 'large',
+        text: 'continue_with', shape: 'pill', width: 280,
+      })
+    }
+    if (window.google?.accounts?.id) renderButton()
+    else document.querySelector('script[data-railsaathi-google-identity]')?.addEventListener('load', renderButton)
+    return () => { cancelled = true }
+  }, [settingsOpen, account])
 
   useEffect(() => {
     if (!googleCredential || !account) return
@@ -357,7 +386,7 @@ export default function JourneyAssistant({
                 <div className="flex items-center gap-3">
                   {account.picture ? <img src={account.picture} alt="" referrerPolicy="no-referrer" className="h-9 w-9 rounded-full" /> : <span className="h-9 w-9 rounded-full bg-[var(--c-slate-surface)]" />}
                   <div className="min-w-0 flex-1"><div className="truncate font-semibold text-[var(--c-text-main)]">{account.name || 'Signed in'}</div><div className="truncate text-xs text-[var(--c-text-muted)]">{account.email}</div></div>
-                  <button type="button" className="text-xs font-bold text-blue-400" onClick={() => { window.google?.accounts?.id?.disableAutoSelect(); setGoogleCredential(null); setAccount(null); setAccountError('') }}>Sign out</button>
+                  <button type="button" className="text-xs font-bold text-blue-400" onClick={() => { window.google?.accounts?.id?.disableAutoSelect(); setGoogleCredential(null); setAccount(null); setAccountError(''); try { localStorage.removeItem('railsaathi_google_account_v1') } catch {} }}>Sign out</button>
                 </div>
               ) : (
                 <>
